@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block title %}Inicio{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="row align-items-center py-5">
+    <div class="col-lg-6">
+        <h1 class="display-4 fw-bold text-primary mb-4">
+            Analiza tu Empresa de Forma <span class="text-success">Inteligente</span>
+        </h1>
+        <p class="lead mb-4">
+            Obtén insights financieros profundos con nuestra herramienta de análisis automatizado. 
+            Descubre tendencias, identifica oportunidades y toma decisiones basadas en datos.
+        </p>
+        <div class="d-flex gap-3">
+            <a href="{{ url_for('upload_page') }}" class="btn btn-primary btn-lg">
+                <i class="fas fa-rocket me-2"></i>Comenzar Análisis
+            </a>
+            <a href="{{ url_for('analysis_demo') }}" class="btn btn-outline-primary btn-lg">
+                <i class="fas fa-eye me-2"></i>Ver Demo
+            </a>
+        </div>
+    </div>
+    <!-- figura -->
+    <div class="col-lg-6 text-center">
+        <div class="financial-dashboard">
+            <div class="dashboard-card profit">
+                <i class="fas fa-chart-line"></i>
+                <div class="value">+20.8%</div>
+                <div class="label">Crecimiento</div>
+            </div>
+            <div class="dashboard-card revenue">
+                <i class="fas fa-dollar-sign"></i>
+                <div class="value">Q1.45M</div>
+                <div class="label">Ventas</div>
+            </div>
+            <div class="dashboard-card balance">
+                <i class="fas fa-balance-scale"></i>
+                <div class="value">2.46</div>
+                <div class="label">Liquidez</div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-bar" style="height: 70%"></div>
+                <div class="chart-bar" style="height: 90%"></div>
+                <div class="chart-bar" style="height: 60%"></div>
+                <div class="chart-bar" style="height: 85%"></div>
+            </div>
+        </div>
+        <style>
+            .financial-dashboard {
+                position: relative;
+                display: inline-block;
+                background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+                border-radius: 20px;
+                padding: 30px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+                border: 1px solid rgba(255,255,255,0.5);
+                animation: float 3s ease-in-out infinite;
+            }
+            .dashboard-card {
+                display: inline-block;
+                background: white;
+                border-radius: 12px;
+                padding: 15px;
+                margin: 5px;
+                text-align: center;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                min-width: 80px;
+                animation: cardSlide 0.6s ease-out;
+            }
+            .dashboard-card i {
+                font-size: 1.5rem;
+                margin-bottom: 8px;
+            }
+            .profit i { color: #28a745; }
+            .revenue i { color: #007bff; }
+            .balance i { color: #6f42c1; }
+            .value {
+                font-weight: bold;
+                font-size: 1.1rem;
+                margin-bottom: 2px;
+            }
+            .label {
+                font-size: 0.8rem;
+                color: #6c757d;
+            }
+            .chart-container {
+                display: flex;
+                align-items: end;
+                gap: 8px;
+                height: 60px;
+                margin-top: 20px;
+                justify-content: center;
+            }
+            .chart-bar {
+                width: 15px;
+                background: linear-gradient(180deg, #007bff, #0056b3);
+                border-radius: 4px 4px 0 0;
+                animation: grow 1.5s ease-out;
+            }
+            @keyframes float {
+                0%, 100% { transform: translateY(0px); }
+                50% { transform: translateY(-8px); }
+            }
+            @keyframes cardSlide {
+                0% { transform: translateY(20px); opacity: 0; }
+                100% { transform: translateY(0); opacity: 1; }
+            }
+            @keyframes grow {
+                0% { height: 0; }
+            }
+        </style>
+    </div>
+</div>
+
+<!-- Features -->
+<div class="row mt-5">
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body text-center">
+                <i class="fas fa-bolt fa-2x text-warning mb-3"></i>
+                <h5 class="card-title">Análisis Rápido</h5>
+                <p class="card-text">Resultados en segundos con solo subir tu archivo Excel o CSV.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body text-center">
+                <i class="fas fa-file-excel fa-2x text-success mb-3"></i>
+                <h5 class="card-title">Múltiples Formatos</h5>
+                <p class="card-text">Soporte para Excel (.xlsx, .xls) y archivos CSV.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body text-center">
+                <i class="fas fa-chart-line fa-2x text-info mb-3"></i>
+                <h5 class="card-title">Indicadores Clave</h5>
+                <p class="card-text">ROA, ROE, liquidez, punto de equilibrio y más.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CTA Section -->
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center py-5">
+                <h3 class="card-title mb-3">¿Listo para comenzar?</h3>
+                <p class="card-text mb-4">Sube tu archivo financiero y obtén un análisis completo en minutos.</p>
+                <a href="{{ url_for('upload_page') }}" class="btn btn-light btn-lg">
+                    <i class="fas fa-upload me-2"></i>Subir Archivo Ahora
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
