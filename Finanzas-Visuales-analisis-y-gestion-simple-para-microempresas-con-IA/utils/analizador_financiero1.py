@@ -949,3 +949,32 @@ class AnalizadorFinanciero:
             print(f"Error preparando datos gráfico vertical: {e}")
             return None
         
+    def obtener_ventas_y_costos(self):
+        """
+        Retorna dos listas:
+            - ventas: lista de valores históricos de ventas
+            - costos: lista de valores históricos de costos
+        Lee la hoja 'estado_resultados' del Excel directamente.
+        """
+
+        # Leer hoja del Excel
+        df = pd.read_excel(self.archivo, sheet_name='estado_resultados')
+
+        # Normalizar nombres de columnas
+        df.columns = [str(c).strip() for c in df.columns]
+
+        # Buscar filas por contenido de la columna 'CONCEPTO'
+        fila_ventas = df[df['CONCEPTO'].str.strip().str.lower() == 'ventas totales']
+        fila_costos = df[df['CONCEPTO'].str.strip().str.lower() == 'costo de ventas']
+
+        if fila_ventas.empty or fila_costos.empty:
+            raise ValueError("No se encontraron filas de 'Ventas totales' o 'Costo de ventas' en 'estado_resultados'.")
+
+        # Extraer valores numéricos de AÑO_ANTERIOR y AÑO_ACTUAL
+        ventas = fila_ventas[['AÑO_ANTERIOR', 'AÑO_ACTUAL']].apply(pd.to_numeric, errors='coerce').dropna(axis=1).values.flatten().tolist()
+        costos = fila_costos[['AÑO_ANTERIOR', 'AÑO_ACTUAL']].apply(pd.to_numeric, errors='coerce').dropna(axis=1).values.flatten().tolist()
+
+        if not ventas or not costos:
+            raise ValueError("No se pudieron obtener valores numéricos de ventas o costos.")
+
+        return ventas, costos

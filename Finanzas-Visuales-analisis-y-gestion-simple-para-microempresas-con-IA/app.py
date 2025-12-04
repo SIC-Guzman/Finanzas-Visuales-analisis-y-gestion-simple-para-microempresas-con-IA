@@ -2,7 +2,9 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, send_file
 import os
 from pathlib import Path
+import pandas as pd
 from werkzeug.utils import secure_filename
+from utils.ia_ventas_costos import ModeloIAVentasCostos
 from utils.analizador_financiero1 import AnalizadorFinanciero
 from flask import send_file
 from utils.pdf_generator import PDFReportGenerator 
@@ -124,26 +126,55 @@ def confirm_data(filename):
         traceback.print_exc()
         return redirect(url_for('upload_page'))
 
+
 @app.route('/process-analysis/<filename>', methods=['POST'])
 def process_analysis(filename):
-    """Procesa el análisis completo después de confirmar datos"""
+    """Procesa el análisis completo después de confirmar datos y agrega predicciones de IA"""
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    
+
     try:
+        # --- Inicializar analizador financiero ---
         analizador = AnalizadorFinanciero(filepath)
         resultados = analizador.generar_reporte_completo()
-        
-        if resultados:
-            return render_template('results.html', 
-                                resultados=resultados,
-                                filename=filename,
-                                empresa=resultados.get('datos_entrada', {}).get('empresa', {}))
-        else:
-            flash('Error generando análisis completo', 'error')
-            return redirect(url_for('upload_page'))
+
+        # --- Inicializar campos obligatorios para el template ---
+        if 'resumen' not in resultados or resultados['resumen'] is None:
+            resultados['resumen'] = {}
+        if 'resultados' not in resultados or resultados['resultados'] is None:
+            resultados['resultados'] = {}
+        if 'graficos' not in resultados or resultados['graficos'] is None:
+            resultados['graficos'] = {}
+
+        # --- Ejecutar predicción de IA de manera segura ---
+        try:
+            # Obtener ventas y costos desde el analizador
+            ventas, costos = analizador.obtener_ventas_y_costos()
+            
+            # Crear modelo IA y predecir próximos 3 años
+            modelo_ia = ModeloIAVentasCostos(ventas=ventas, costos=costos)
+            resultados_ia = modelo_ia.predecir_proximos_anios(anios=3)
+
+            # Guardar resultados de IA en un subcampo
+            resultados['resultados_ia'] = resultados_ia
+
+        except Exception as e:
+            # No interrumpe la carga del template; solo agrega mensaje de error
+            resultados['resultados_ia'] = {
+                'error': f"No se pudieron generar predicciones de IA: {str(e)}"
+            }
+
+        # --- Renderizar plantilla ---
+        return render_template(
+            'results.html',
+            resultados=resultados,
+            filename=filename,
+            empresa=resultados.get('datos_entrada', {}).get('empresa', {})
+        )
+
     except Exception as e:
         flash(f'Error en análisis: {str(e)}', 'error')
         return redirect(url_for('upload_page'))
+
 
 @app.route('/analysis')
 def analysis_demo():
