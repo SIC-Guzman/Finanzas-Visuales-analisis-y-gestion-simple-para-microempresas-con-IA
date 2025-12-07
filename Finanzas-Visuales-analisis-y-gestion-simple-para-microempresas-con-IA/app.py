@@ -2,7 +2,10 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, send_file
 import os
 from pathlib import Path
+import pandas as pd
 from werkzeug.utils import secure_filename
+from utils.ia_ventas_costos import ModeloIAVentasCostos
+from utils.ia_anomalias_financieras import ModeloAnomaliasFinancieras
 from utils.analizador_financiero1 import AnalizadorFinanciero
 from flask import send_file
 from utils.pdf_generator import PDFReportGenerator 
@@ -124,26 +127,96 @@ def confirm_data(filename):
         traceback.print_exc()
         return redirect(url_for('upload_page'))
 
+
 @app.route('/process-analysis/<filename>', methods=['POST'])
 def process_analysis(filename):
-    """Procesa el análisis completo después de confirmar datos"""
+    """Procesa el análisis completo después de confirmar datos y agrega predicciones de IA"""
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    
+
     try:
+        # --- Inicializar analizador financiero ---
         analizador = AnalizadorFinanciero(filepath)
         resultados = analizador.generar_reporte_completo()
-        
-        if resultados:
-            return render_template('results.html', 
-                                resultados=resultados,
-                                filename=filename,
-                                empresa=resultados.get('datos_entrada', {}).get('empresa', {}))
-        else:
-            flash('Error generando análisis completo', 'error')
-            return redirect(url_for('upload_page'))
+
+        # --- Inicializar campos obligatorios para el template ---
+        if 'resumen' not in resultados or resultados['resumen'] is None:
+            resultados['resumen'] = {}
+        if 'resultados' not in resultados or resultados['resultados'] is None:
+            resultados['resultados'] = {}
+        if 'graficos' not in resultados or resultados['graficos'] is None:
+            resultados['graficos'] = {}
+
+        # --- Ejecutar predicción de IA de manera segura ---
+        try:
+            # Obtener ventas y costos desde el analizador
+            ventas, costos = analizador.obtener_ventas_y_costos()
+
+            # Crear modelo IA y predecir próximos 3 años
+            modelo_ia = ModeloIAVentasCostos(ventas=ventas, costos=costos)
+            resultados_ia = modelo_ia.predecir_proximos_anios(anios=3)
+
+            # Guardar resultados de IA en un subcampo
+            resultados['resultados_ia'] = resultados_ia
+
+        except Exception as e:
+            # No interrumpe la carga del template; solo agrega mensaje de error
+            resultados['resultados_ia'] = {
+                'error': f"No se pudieron generar predicciones de IA: {str(e)}"
+            }
+
+        # --- Ejecutar Deteccion y Prediccion de anomalias Financieras ---
+        try:
+            # Obtener totales calculados por el analizador (usaremos _calcular_totales)
+            totales = analizador._calcular_totales()
+
+            model_anom = ModeloAnomaliasFinancieras(totales, contamination=0.12)
+            det = model_anom.entrenar_y_detectar()
+            pred = model_anom.predecir_futuro_y_evaluar(anios=3)
+
+            # Construir estructura esperada por el frontend (tal como definimos en _anomalias_tab.html)
+            detalles = []
+            # si quieres marcar año real (AÑO_ANTERIOR y AÑO_ACTUAL) añade la detección actual como "AÑO_ACTUAL"
+            detalles.append({
+                'anio': 'AÑO_ACTUAL',
+                'ventas': totales.get('total_ingresos_actual'),
+                'costos': totales.get('total_costos_actual'),
+                'score': det.get('score_actual'),
+                'tipo': det.get('estado_actual')
+            })
+
+            predicciones = []
+            base_year = 1
+            for p in pred:
+                predicciones.append({
+                    'anio': f'Futuro +{p["anio_offset"]}',
+                    'prob': p['prob_anomalia'],
+                    'riesgo': p['riesgo']
+                })
+
+            resultados['anomalias_financieras'] = {
+                'detalles': detalles,
+                'predicciones': predicciones,
+                'raw': {'det': det, 'pred_raw': pred}  # opcional: datos crudos para debugging
+            }
+
+        except Exception as e:
+            resultados['anomalias_financieras'] = {
+                'error': f"Error en detección/predicción de anomalias: {str(e)}"
+            }
+
+
+        # --- Renderizar plantilla ---
+        return render_template(
+            'results.html',
+            resultados=resultados,
+            filename=filename,
+            empresa=resultados.get('datos_entrada', {}).get('empresa', {})
+        )
+
     except Exception as e:
         flash(f'Error en análisis: {str(e)}', 'error')
         return redirect(url_for('upload_page'))
+
 
 @app.route('/analysis')
 def analysis_demo():

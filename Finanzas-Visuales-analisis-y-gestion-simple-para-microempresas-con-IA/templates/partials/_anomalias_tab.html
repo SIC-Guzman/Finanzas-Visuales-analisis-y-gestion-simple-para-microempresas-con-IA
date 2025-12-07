@@ -1,0 +1,92 @@
+<div class="card shadow">
+    <div class="card-header bg-danger text-white">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-bug me-2"></i>Detección y Predicción de Anomalías Financieras
+        </h5>
+    </div>
+
+    <div class="card-body">
+
+        <!-- ====== ANOMALÍAS DETECTADAS ====== -->
+        <h6 class="text-danger fw-bold mb-3">
+            <i class="fas fa-exclamation-triangle me-2"></i>Anomalías Detectadas
+        </h6>
+
+        {% set anomalias = resultados.get('anomalias_financieras', {}) %}
+
+        {% if anomalias.get('detalles', []) %}
+            <div class="table-responsive mb-4">
+                <table class="table table-bordered table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Año</th>
+                            <th>Ventas</th>
+                            <th>Costos</th>
+                            <th>Probabilidad Anomalía</th>
+                            <th>Tipo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in anomalias.detalles %}
+                        <tr class="table-danger">
+                            <td>{{ item.anio }}</td>
+                            <td>Q{{ item.ventas | round(2) }}</td>
+                            <td>Q{{ item.costos | round(2) }}</td>
+                            <td>{{ (item.score * 100) | round(2) }}%</td>
+                            <td>{{ item.tipo }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="alert alert-success">
+                <i class="fas fa-check-circle me-2"></i>
+                No se detectaron anomalías financieras.
+            </div>
+        {% endif %}
+
+
+        <!-- ====== PREDICCIÓN DE ANOMALÍAS FUTURAS ====== -->
+        <h6 class="text-primary fw-bold mt-4 mb-3">
+            <i class="fas fa-robot me-2"></i>Predicción Próximos 3 Años
+        </h6>
+
+        {% if anomalias.get('predicciones', []) %}
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Año</th>
+                            <th>Probabilidad Anomalía</th>
+                            <th>Riesgo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pred in anomalias.predicciones %}
+                        <tr class="{% if pred.prob > 0.5 %}table-warning{% endif %}">
+                            <td>{{ pred.anio }}</td>
+                            <td>{{ (pred.prob * 100) | round(2) }}%</td>
+                            <td>
+                                {% if pred.prob > 0.7 %}
+                                    Alto
+                                {% elif pred.prob > 0.3 %}
+                                    Medio
+                                {% else %}
+                                    Bajo
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                No hay predicciones disponibles.
+            </div>
+        {% endif %}
+
+    </div>
+</div>

@@ -1,0 +1,142 @@
+<!-- Predicciones IA -->
+<div class="row">
+    {% set ia_resumen = resultados.get('resultados_ia', {}).get('resumen', {}) %}
+    {% set ia_predicciones = resultados.get('resultados_ia', {}).get('predicciones', {}) %}
+    
+    <!-- KPI Card: Crecimiento Anual Promedio -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-start border-primary border-4 shadow h-100">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <div class="text-xs fw-bold text-primary text-uppercase mb-1">
+                            Crecimiento anual promedio
+                        </div>
+                        <div class="h5 mb-0 fw-bold text-gray-800">
+                            {{ ia_resumen.get('crecimiento_anual_promedio_%', 0) | round(2) }}%
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-chart-line fa-2x text-primary"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI Card: Último Valor Ventas -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-start border-success border-4 shadow h-100">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <div class="text-xs fw-bold text-success text-uppercase mb-1">
+                            Últimas Ventas
+                        </div>
+                        <div class="h5 mb-0 fw-bold text-gray-800">
+                            Q{{ ia_resumen.get('ultimo_valor_ventas', 0) | round(2) }}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-dollar-sign fa-2x text-success"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI Card: Último Valor Costos -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-start border-warning border-4 shadow h-100">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <div class="text-xs fw-bold text-warning text-uppercase mb-1">
+                            Últimos Costos
+                        </div>
+                        <div class="h5 mb-0 fw-bold text-gray-800">
+                            Q{{ ia_resumen.get('ultimo_valor_costos', 0) | round(2) }}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-coins fa-2x text-warning"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabla de Predicciones -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header bg-info text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-robot me-2"></i>Predicciones Próximos 3 Años
+                </h5>
+            </div>
+            <div class="card-body table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Año</th>
+                            {% for i in range(ia_predicciones.get('ventas', [])|length) %}
+                                <th>{{ i + 1 }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <th>Ventas (Q)</th>
+                            {% for v in ia_predicciones.get('ventas', []) %}
+                                <td>{{ v | round(2) }}</td>
+                            {% endfor %}
+                        </tr>
+                        <tr>
+                            <th>Costos (Q)</th>
+                            {% for c in ia_predicciones.get('costos', []) %}
+                                <td>{{ c | round(2) }}</td>
+                            {% endfor %}
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Interpretación Simple como Texto -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-lightbulb me-2"></i>Interpretación de Predicciones
+                </h5>
+            </div>
+            <div class="card-body">
+                {% set crecimiento = resultados['resultados_ia']['resumen'].get('crecimiento_anual_promedio_%', 0) %}
+
+                <p class="mb-2">
+                    <i class="fas 
+                        {% if crecimiento > 15 %}fa-rocket text-success
+                        {% elif crecimiento > 0 %}fa-chart-line text-info
+                        {% else %}fa-exclamation-triangle text-warning{% endif %} me-2"></i>
+
+                    {% if crecimiento > 15 %}
+                        Excelente crecimiento proyectado para los próximos 3 años.
+                    {% elif crecimiento > 0 %}
+                        Crecimiento positivo proyectado.
+                    {% else %}
+                        Se proyecta disminución en las ventas.
+                    {% endif %}
+                </p>
+
+                <p class="text-muted small">
+                    Valor estimado de crecimiento anual promedio: {{ crecimiento }}%
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
