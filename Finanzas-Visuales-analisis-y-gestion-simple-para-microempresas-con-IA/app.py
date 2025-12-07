@@ -166,44 +166,57 @@ def process_analysis(filename):
 
         # --- Ejecutar Deteccion y Prediccion de anomalias Financieras ---
         try:
-            # Obtener totales calculados por el analizador (usaremos _calcular_totales)
+            # Calcular totales públicos (no usar _privados)
             totales = analizador._calcular_totales()
 
-            model_anom = ModeloAnomaliasFinancieras(totales, contamination=0.12)
+            # Validar existencia de datos mínimos
+            if totales.get("total_ingresos_actual") is None:
+                raise Exception("Faltan datos para análisis de anomalías.")
+
+            model_anom = ModeloAnomaliasFinancieras(
+                totales,          
+                contamination=0.12
+            )
+
             det = model_anom.entrenar_y_detectar()
             pred = model_anom.predecir_futuro_y_evaluar(anios=3)
 
-            # Construir estructura esperada por el frontend (tal como definimos en _anomalias_tab.html)
-            detalles = []
-            # si quieres marcar año real (AÑO_ANTERIOR y AÑO_ACTUAL) añade la detección actual como "AÑO_ACTUAL"
-            detalles.append({
-                'anio': 'AÑO_ACTUAL',
-                'ventas': totales.get('total_ingresos_actual'),
-                'costos': totales.get('total_costos_actual'),
-                'score': det.get('score_actual'),
-                'tipo': det.get('estado_actual')
-            })
+            # Asegurar consistencia en costos
+            costos_actuales = totales.get("total_costos_actual", 0)
 
-            predicciones = []
-            base_year = 1
+            print("\n================= ANÁLISIS DE ANOMALÍAS =================\n")
+
+            # ===== RESULTADO ACTUAL =====
+            print(">>> ESTADO FINANCIERO ACTUAL\n")
+            print(f"Estado Final: {det.get('estado_final')}")
+            print(f"Estado IA: {det.get('estado_ia')}")
+            print(f"Score IA: {det.get('score_ia')}")
+            print(f"Nivel reglas: {det.get('reglas', {}).get('nivel_riesgo_reglas')}")
+            print("\nAlertas:")
+            for a in det.get("reglas", {}).get("alertas", []):
+                print(" -", a)
+
+            print("\nFeatures usadas por la IA:")
+            for k, v in det.get("features", {}).items():
+                print(f"  {k}: {v}")
+
+            # ===== PREDICCIONES =====
+            print("\n\n>>> PREDICCIONES FUTURAS\n")
+
             for p in pred:
-                predicciones.append({
-                    'anio': f'Futuro +{p["anio_offset"]}',
-                    'prob': p['prob_anomalia'],
-                    'riesgo': p['riesgo']
-                })
+                print(f"AÑO +{p['anios_offset']}")
+                print("Predicciones:")
+                for k, v in p["predicciones"].items():
+                    print(f"  {k}: {v}")
+                print(f"Probabilidad de anomalía: {p['prob_anomalia']}")
+                print(f"Riesgo: {p['riesgo']}")
+                print("-" * 50)
 
-            resultados['anomalias_financieras'] = {
-                'detalles': detalles,
-                'predicciones': predicciones,
-                'raw': {'det': det, 'pred_raw': pred}  # opcional: datos crudos para debugging
-            }
 
         except Exception as e:
-            resultados['anomalias_financieras'] = {
-                'error': f"Error en detección/predicción de anomalias: {str(e)}"
+            resultados["anomalias_financieras"] = {
+                "error": f"Error en Anomalías Financieras: {str(e)}"
             }
-
 
         # --- Renderizar plantilla ---
         return render_template(
