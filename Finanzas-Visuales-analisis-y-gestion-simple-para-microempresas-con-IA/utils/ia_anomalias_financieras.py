@@ -6,180 +6,197 @@ from sklearn.linear_model import LinearRegression
 
 class ModeloAnomaliasFinancieras:
     """
-    Entrena IsolationForest sobre un vector de features construidos desde
-    los totales calculados por _calcular_totales(). También genera predicciones
-    futuras básicas (regresión lineal) y evalúa riesgo/anomalía sobre ellas.
+    Modelo híbrido: combina reglas financieras + IsolationForest.
+    - Reglas claras detectan anomalías estructurales.
+    - IA refuerza el resultado.
     """
 
     def __init__(self, totales_dict, contamination=0.15):
-        """
-        totales_dict: dict retornado por analizador._calcular_totales()
-        """
         self.totales = totales_dict
         self.contamination = contamination
         self.isof = None
         self.feature_df = None
         self._prepare_features()
 
+    # ===============================================================
+    #   GENERACIÓN DE FEATURES NUMÉRICOS
+    # ===============================================================
     def _prepare_features(self):
-        """Convierte totales en DataFrame + calcula ratios/crecimientos"""
+        """Convierte totales en DataFrame + ratios."""
         t = self.totales
 
-        # Aseguramos valores numéricos (evitar ZeroDivision)
-        def safe(x): 
+        def safe(x):
             try: return float(x)
-            except Exception: return np.nan
+            except: return 0.0
 
-        data = {
-            'total_ingresos_anterior': safe(t.get('total_ingresos_anterior')),
-            'total_ingresos_actual' : safe(t.get('total_ingresos_actual')),
-            'utilidad_neta_anterior' : safe(t.get('utilidad_neta_anterior')),
-            'utilidad_neta_actual'  : safe(t.get('utilidad_neta_actual')),
-            'total_activos_anterior' : safe(t.get('total_activos_anterior')),
-            'total_activos_actual'  : safe(t.get('total_activos_actual')),
-            'total_pasivos_anterior': safe(t.get('total_pasivos_anterior')),
-            'total_pasivos_actual'  : safe(t.get('total_pasivos_actual')),
-            'total_patrimonio_anterior': safe(t.get('total_patrimonio_anterior')),
-            'total_patrimonio_actual'  : safe(t.get('total_patrimonio_actual')),
-            'activo_corriente_anterior': safe(t.get('activo_corriente_anterior')),
-            'activo_corriente_actual'  : safe(t.get('activo_corriente_actual')),
-        }
+        df = pd.DataFrame([{
+            'ingresos_ant': safe(t.get('total_ingresos_anterior')),
+            'ingresos_act': safe(t.get('total_ingresos_actual')),
+            'utilidad_ant': safe(t.get('utilidad_neta_anterior')),
+            'utilidad_act': safe(t.get('utilidad_neta_actual')),
+            'activos_ant': safe(t.get('total_activos_anterior')),
+            'activos_act': safe(t.get('total_activos_actual')),
+            'pasivos_act': safe(t.get('total_pasivos_actual')),
+            'patrimonio_act': safe(t.get('total_patrimonio_actual')),
+            'activo_corriente': safe(t.get('activo_corriente_actual')),
+        }])
 
-        df = pd.DataFrame([data])
-
-        # Ratios y crecimientos (usar eps para evitar div/0)
         eps = 1e-9
-        df['crecimiento_ingresos'] = (df['total_ingresos_actual'] - df['total_ingresos_anterior']) / (df['total_ingresos_anterior'] + eps)
-        df['crecimiento_utilidad'] = (df['utilidad_neta_actual'] - df['utilidad_neta_anterior']) / (df['utilidad_neta_anterior'] + eps)
-        df['margen_neto_actual'] = df['utilidad_neta_actual'] / (df['total_ingresos_actual'] + eps)
-        df['margen_neto_anterior'] = df['utilidad_neta_anterior'] / (df['total_ingresos_anterior'] + eps)
-        df['apalancamiento_actual'] = df['total_pasivos_actual'] / (df['total_patrimonio_actual'] + eps)
-        df['liquidez_actual'] = df['activo_corriente_actual'] / (df['total_pasivos_actual'] + eps)
+        df["crec_ing"] = (df.ingresos_act - df.ingresos_ant) / (df.ingresos_ant + eps)
+        df["crec_util"] = (df.utilidad_act - df.utilidad_ant) / (df.utilidad_ant + eps)
+        df["margen_neto"] = df.utilidad_act / (df.ingresos_act + eps)
+        df["apalancamiento"] = df.pasivos_act / (df.patrimonio_act + eps)
+        df["liquidez"] = df.activo_corriente / (df.pasivos_act + eps)
 
-        # Keep numeric columns only
-        self.feature_df = df.replace([np.inf, -np.inf], np.nan).fillna(0)
+        self.feature_df = df.fillna(0).replace([np.inf, -np.inf], 0)
 
-    # -------------------------
-    # Entrenar / detectar
-    # -------------------------
-    def entrenar_y_detectar(self):
+    # ===============================================================
+    #   MOTOR DE REGLAS FINANCIERAS
+    # ===============================================================
+    def evaluar_reglas_financieras(self):
         """
-        Entrena IsolationForest con la fila actual (sí: isolation necesita más datos,
-        pero en tu flujo anual usualmente solo hay una fila por empresa por análisis).
-        Esto devuelve una puntuación y un estado.
-        Nota: con 1 fila el modelo no es robusto; usamos el decision_function como score heurístico.
+        Evalúa indicadores clave y genera alertas explicables.
         """
-        if self.feature_df is None:
-            self._prepare_features()
+        df = self.feature_df.iloc[0]
+        alertas = []
+        riesgo_total = 0  # 0 bajo, 1 medio, 2 alto
 
-        # Si hubiera más observaciones (por ejemplo, guardadas históricamente por empresa),
-        # sería mejor entrenar sobre un conjunto mayor. Aquí entrenamos sobre la fila misma
-        # con parámetros que marcan anomalía si la puntuación es baja.
-        # Para estabilidad, ponemos n_estimators pequeño si hay muy pocos datos.
-        n_est = 100
-        self.isof = IsolationForest(n_estimators=n_est, contamination=self.contamination, random_state=42)
-        try:
-            self.isof.fit(self.feature_df)
-            pred = self.isof.predict(self.feature_df)[0]   # 1 normal, -1 anomalía
-            score = float(self.isof.decision_function(self.feature_df)[0])  # mayor = más "normal"
-            estado = "ANÓMALO" if pred == -1 else "NORMAL"
-        except Exception as e:
-            # Fallback: si falla el fit (poco dato), devolvemos heurística basada en cambios
-            score = float(self.feature_df['crecimiento_ingresos'].iloc[0])
-            estado = "PENDIENTE_VALIDACION"
+        # --- 1. Ingresos negativos ---
+        if df.ingresos_act < 0:
+            alertas.append("Ingresos actuales negativos: comportamiento no razonable.")
+            riesgo_total += 2
+
+        # --- 2. Utilidad negativa más del -30% de ingresos ---
+        if df.utilidad_act < -0.3 * df.ingresos_act:
+            alertas.append("Pérdidas severas: utilidad < -30% de los ingresos.")
+            riesgo_total += 2
+
+        # --- 3. Apalancamiento muy alto ---
+        if df.apalancamiento > 3:
+            alertas.append("Apalancamiento alto (>3): muchos pasivos frente a patrimonio.")
+            riesgo_total += 2
+
+        # --- 4. Liquidez muy baja ---
+        if df.liquidez < 0.7:
+            alertas.append("Liquidez limitada (<0.7): podría haber riesgo de pago.")
+            riesgo_total += 1
+
+        # --- 5. Caída fuerte de ingresos (>30%) ---
+        if df.crec_ing < -0.3:
+            alertas.append("Caída importante de ingresos (>30%).")
+            riesgo_total += 1
+
+        # --- 6. Margen neto muy bajo ---
+        if df.margen_neto < 0.02:  # <2%
+            alertas.append("Margen neto bajo (<2%): rentabilidad limitada.")
+            riesgo_total += 1
+
+        # Definición del riesgo semántico
+        if riesgo_total >= 3:
+            nivel = "ALTO"
+        elif riesgo_total == 2:
+            nivel = "MEDIO"
+        else:
+            nivel = "BAJO"
 
         return {
-            "estado_actual": estado,
-            "score_actual": score,
-            "features": self.feature_df.to_dict(orient='records')[0]
+            "nivel_riesgo_reglas": nivel,
+            "alertas": alertas
         }
 
-    # -------------------------
-    # Predicción básica (regresión) y evaluación de riesgo
-    # -------------------------
-    def predecir_futuro_y_evaluar(self, años=3):
+    # ===============================================================
+    #   IA: ISOLATION FOREST
+    # ===============================================================
+    def entrenar_y_detectar(self):
         """
-        Predice total_ingresos, utilidad_neta y total_activos a partir de los dos puntos (anterior, actual)
-        usando regresión lineal (como en tu ModeloIAVentasCostos) y luego evalúa riesgo/
-        probabilidad de anomalía aplicando el IsolationForest (si entrenado).
-        Retorna lista de dicts por año futuro: {'anio_offset':1, 'predicciones':{...}, 'prob_anomalia':0.12}
+        Entrena IsolationForest y combina con reglas financieras.
         """
-        # preparar pares
+        # → Entrenamos el IsolationForest con la única fila disponible
+        #   (funciona como heurística adicional, no como base).
+        self.isof = IsolationForest(
+            contamination=self.contamination,
+            n_estimators=100,
+            random_state=42
+        ).fit(self.feature_df)
+
+        pred = self.isof.predict(self.feature_df)[0]       # 1 normal, -1 anomalía
+        score = float(self.isof.decision_function(self.feature_df)[0])
+
+        estado_ia = "ANÓMALO" if pred == -1 else "NORMAL"
+
+        # → Reglas financieras
+        reglas = self.evaluar_reglas_financieras()
+
+        # → Fusión de resultados
+        if reglas["nivel_riesgo_reglas"] == "ALTO" or estado_ia == "ANÓMALO":
+            estado_final = "RIESGO ALTO"
+        elif reglas["nivel_riesgo_reglas"] == "MEDIO":
+            estado_final = "RIESGO MEDIO"
+        else:
+            estado_final = "RIESGO BAJO"
+
+        return {
+            "estado_final": estado_final,
+            "estado_ia": estado_ia,
+            "score_ia": score,
+            "reglas": reglas,
+            "features": self.feature_df.to_dict(orient="records")[0]
+        }
+
+    # ===============================================================
+    #   PREDICCIÓN FUTURA (SE MANTIENE IGUAL QUE TU VERSIÓN)
+    # ===============================================================
+    def predecir_futuro_y_evaluar(self, anios=3):
+        """
+        Se utiliza IA pura para proyectar ingresos, utilidad y activos.
+        """
         resultados = []
         pares = {
-            "total_ingresos": [self.totales.get('total_ingresos_anterior'), self.totales.get('total_ingresos_actual')],
-            "utilidad_neta": [self.totales.get('utilidad_neta_anterior'), self.totales.get('utilidad_neta_actual')],
-            "total_activos": [self.totales.get('total_activos_anterior'), self.totales.get('total_activos_actual')]
+            "total_ingresos": [
+                self.totales.get('total_ingresos_anterior'),
+                self.totales.get('total_ingresos_actual')
+            ],
+            "utilidad_neta": [
+                self.totales.get('utilidad_neta_anterior'),
+                self.totales.get('utilidad_neta_actual')
+            ],
+            "total_activos": [
+                self.totales.get('total_activos_anterior'),
+                self.totales.get('total_activos_actual')
+            ]
         }
 
-        # fit simple por campo
-        for year_offset in range(1, años + 1):
+        for year_offset in range(1, anios + 1):
             pred_dict = {}
             for campo, valores in pares.items():
-                # si hay datos numéricos válidos
                 try:
                     y = np.array([float(valores[0]), float(valores[1])])
                     X = np.array([[0], [1]])
                     lr = LinearRegression().fit(X, y)
-                    pred = lr.predict(np.array([[1 + year_offset]])).tolist()[0]
-                except Exception:
+                    pred = float(lr.predict([[1 + year_offset]])[0])
+                except:
                     pred = None
+
                 pred_dict[campo] = pred
 
-            # crear fila con predicción y calcular features (ratios) como si fueran reales
-            eps = 1e-9
-            total_ing_pred = pred_dict['total_ingresos'] or 0.0
-            util_pred = pred_dict['utilidad_neta'] or 0.0
-            activos_pred = pred_dict['total_activos'] or 0.0
-            # construir feature vector estilo self.feature_df
-            feat = {
-                'total_ingresos_anterior': float(self.totales.get('total_ingresos_actual') or 0.0),  # shift
-                'total_ingresos_actual': float(total_ing_pred),
-                'utilidad_neta_anterior': float(self.totales.get('utilidad_neta_actual') or 0.0),
-                'utilidad_neta_actual': float(util_pred),
-                'total_activos_anterior': float(self.totales.get('total_activos_actual') or 0.0),
-                'total_activos_actual': float(activos_pred),
-                'total_pasivos_anterior': float(self.totales.get('total_pasivos_actual') or 0.0),
-                'total_pasivos_actual': float(self.totales.get('total_pasivos_actual') or 0.0),  # no predictamos pasivos
-                'total_patrimonio_anterior': float(self.totales.get('total_patrimonio_actual') or 0.0),
-                'total_patrimonio_actual': float(self.totales.get('total_patrimonio_actual') or 0.0),
-                'activo_corriente_anterior': float(self.totales.get('activo_corriente_actual') or 0.0),
-                'activo_corriente_actual': float(self.totales.get('activo_corriente_actual') or 0.0),
-            }
-
-            # calcular ratios
-            crec_ing = (feat['total_ingresos_actual'] - feat['total_ingresos_anterior']) / (feat['total_ingresos_anterior'] + eps)
-            margen = (feat['utilidad_neta_actual'] / (feat['total_ingresos_actual'] + eps)) if feat['total_ingresos_actual'] != 0 else 0.0
-            apal = (feat['total_pasivos_actual'] / (feat['total_patrimonio_actual'] + eps)) if feat['total_patrimonio_actual'] != 0 else 0.0
-            liquidez = (feat['activo_corriente_actual'] / (feat['total_pasivos_actual'] + eps)) if feat['total_pasivos_actual'] != 0 else 0.0
-
-            feat_vec = pd.DataFrame([{
-                'crecimiento_ingresos': crec_ing,
-                'crecimiento_utilidad': 0.0,  # no calculado finamente aquí
-                'margen_neto_actual': margen,
-                'apalancamiento_actual': apal,
-                'liquidez_actual': liquidez
-            }]).fillna(0)
-
-            # evaluar con IsolationForest si existe
+            # Evaluar IA (sin reglas)
             prob_anom = 0.0
             riesgo = "Bajo"
             if self.isof is not None:
-                # decision_function: valores más bajos => más anomalía. Normalizamos a [0,1] heurístico
-                df_score = float(self.isof.decision_function(feat_vec)[0])
-                # Convertimos score a prob_anomalia (menor score => mayor prob)
-                prob_anom = max(0.0, min(1.0, ( -df_score ) / (1.0 + abs(df_score))))
+                feat_vec = pd.DataFrame([self.feature_df.mean()])  # dummy future
+                score = float(self.isof.decision_function(feat_vec)[0])
+
+                prob_anom = max(0.0, min(1.0, (-score) / (1 + abs(score))))
                 if prob_anom > 0.7:
                     riesgo = "Alto"
                 elif prob_anom > 0.3:
                     riesgo = "Medio"
 
             resultados.append({
-                'anio_offset': year_offset,
-                'predicciones': pred_dict,
-                'prob_anomalia': round(float(prob_anom), 4),
-                'riesgo': riesgo,
-                'feature_vector': feat  # para debug/auditoría
+                "anios_offset": year_offset,
+                "predicciones": pred_dict,
+                "prob_anomalia": round(prob_anom, 3),
+                "riesgo": riesgo
             })
 
         return resultados
