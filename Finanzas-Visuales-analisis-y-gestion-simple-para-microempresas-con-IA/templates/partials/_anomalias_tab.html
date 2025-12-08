@@ -1,92 +1,213 @@
-<div class="card shadow">
-    <div class="card-header bg-danger text-white">
-        <h5 class="card-title mb-0">
-            <i class="fas fa-bug me-2"></i>Detección y Predicción de Anomalías Financieras
-        </h5>
+<!-- ============================= -->
+<!-- === TAB ANOMALÍAS IA ======== -->
+<!-- ============================= -->
+
+{% set anom = resultados.get('anomalias_financieras', {}) %}
+{% set detalles = anom.get('detalles', []) %}
+{% set predicciones = anom.get('predicciones', []) %}
+
+{% if anom.get('error') %}
+<div class="alert alert-danger mt-3">
+    <i class="fas fa-exclamation-triangle me-2"></i>{{ anom.get('error') }}
+</div>
+{% else %}
+
+<!-- ===== KPI CARDS ===== -->
+<div class="row">
+
+    <!-- KPI: Ingresos Actuales -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-start border-success border-4 shadow h-100">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <div class="text-xs fw-bold text-success text-uppercase mb-1">
+                            Ingresos Actuales
+                        </div>
+                        <div class="h5 mb-0 fw-bold text-gray-800">
+                            Q{{ detalles[0].ventas | round(2) if detalles else 0 }}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-dollar-sign fa-2x text-success"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div class="card-body">
+    <!-- KPI: Tipos -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-start border-danger border-4 shadow h-100">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <div class="text-xs fw-bold text-danger text-uppercase mb-1">
+                            Estado Financiero
+                        </div>
+                        <div class="h5 mb-0 fw-bold text-gray-800">
+                            {{ detalles[0].tipo if detalles else "N/A" }}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-exclamation-circle fa-2x text-danger"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        <!-- ====== ANOMALÍAS DETECTADAS ====== -->
-        <h6 class="text-danger fw-bold mb-3">
-            <i class="fas fa-exclamation-triangle me-2"></i>Anomalías Detectadas
-        </h6>
+    <!-- KPI: Estado IA -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-start border-secondary border-4 shadow h-100">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <div class="text-xs fw-bold text-secondary text-uppercase mb-1">
+                            Estado IA
+                        </div>
+                        <div class="h5 mb-0 fw-bold text-gray-800">
+                            {{ detalles[0].estado_ia if detalles else "N/A" }}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-robot fa-2x text-secondary"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        {% set anomalias = resultados.get('anomalias_financieras', {}) %}
 
-        {% if anomalias.get('detalles', []) %}
-            <div class="table-responsive mb-4">
-                <table class="table table-bordered table-hover">
+    <!-- KPI: Score IA -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-start border-info border-4 shadow h-100">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <div class="text-xs fw-bold text-info text-uppercase mb-1">
+                            Score de Anomalía
+                        </div>
+                        <div class="h5 mb-0 fw-bold text-gray-800">
+                            {{ detalles[0].score_ia | round(4) if detalles else 0 }}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-brain fa-2x text-info"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+</div>
+
+<!-- ===== TABLA DE PREDICCIONES EXPANDIBLE ===== -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-area me-2"></i>Predicción de Riesgo de Anomalía (3 Años)
+                </h5>
+            </div>
+
+            <div class="card-body table-responsive">
+                <table class="table table-bordered table-hover text-center align-middle">
+
                     <thead class="table-light">
                         <tr>
-                            <th>Año</th>
-                            <th>Ventas</th>
-                            <th>Costos</th>
-                            <th>Probabilidad Anomalía</th>
-                            <th>Tipo</th>
+                            <th></th>
+                            <th>Año Futuro</th>
+                            <th>Probabilidad</th>
+                            <th>Nivel de Riesgo</th>
                         </tr>
                     </thead>
+
                     <tbody>
-                        {% for item in anomalias.detalles %}
-                        <tr class="table-danger">
-                            <td>{{ item.anio }}</td>
-                            <td>Q{{ item.ventas | round(2) }}</td>
-                            <td>Q{{ item.costos | round(2) }}</td>
-                            <td>{{ (item.score * 100) | round(2) }}%</td>
-                            <td>{{ item.tipo }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        {% else %}
-            <div class="alert alert-success">
-                <i class="fas fa-check-circle me-2"></i>
-                No se detectaron anomalías financieras.
-            </div>
-        {% endif %}
-
-
-        <!-- ====== PREDICCIÓN DE ANOMALÍAS FUTURAS ====== -->
-        <h6 class="text-primary fw-bold mt-4 mb-3">
-            <i class="fas fa-robot me-2"></i>Predicción Próximos 3 Años
-        </h6>
-
-        {% if anomalias.get('predicciones', []) %}
-            <div class="table-responsive">
-                <table class="table table-bordered table-hover">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Año</th>
-                            <th>Probabilidad Anomalía</th>
-                            <th>Riesgo</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for pred in anomalias.predicciones %}
-                        <tr class="{% if pred.prob > 0.5 %}table-warning{% endif %}">
-                            <td>{{ pred.anio }}</td>
-                            <td>{{ (pred.prob * 100) | round(2) }}%</td>
+                        {% for p in predicciones %}
+                        <!-- ===== FILA PRINCIPAL ===== -->
+                        <tr data-bs-toggle="collapse" data-bs-target="#detalle{{ loop.index }}" style="cursor:pointer;">
                             <td>
-                                {% if pred.prob > 0.7 %}
-                                    Alto
-                                {% elif pred.prob > 0.3 %}
-                                    Medio
+                                <i class="fas fa-plus-circle text-primary"></i>
+                            </td>
+                            <td>{{ p.anios }}</td>
+                            <td>{{ (p.prob * 100) | round(2) }}%</td>
+                            <td>
+                                {% if p.riesgo == "ALTO" %}
+                                    <span class="badge bg-danger">Alto</span>
+                                {% elif p.riesgo == "MEDIO" %}
+                                    <span class="badge bg-warning text-dark">Medio</span>
                                 {% else %}
-                                    Bajo
+                                    <span class="badge bg-success">Bajo</span>
                                 {% endif %}
+                            </td>
+                        </tr>
+
+                        <!-- ===== FILA EXPANDIBLE (DETALLES) ===== -->
+                        <tr class="collapse bg-light" id="detalle{{ loop.index }}">
+                            <td colspan="4" class="text-start p-3">
+
+                                <strong>Detalles de Predicción:</strong>
+                                <ul class="mt-2 mb-0">
+                                    {% for k, v in p.predicciones.items() %}
+                                        <li>
+                                            <strong>{{ k | replace("_", " ") | upper }}:</strong>
+                                            {{ v | round(2) }}
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+
                             </td>
                         </tr>
                         {% endfor %}
                     </tbody>
+
                 </table>
             </div>
-        {% else %}
-            <div class="alert alert-info">
-                <i class="fas fa-info-circle me-2"></i>
-                No hay predicciones disponibles.
-            </div>
-        {% endif %}
-
+        </div>
     </div>
 </div>
+
+
+<!-- ===== INTERPRETACIÓN ===== -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header bg-danger text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-lightbulb me-2"></i>Interpretación de Riesgo
+                </h5>
+            </div>
+            <div class="card-body">
+
+                {% set riesgo_max = predicciones[0].riesgo if predicciones else "BAJO" %}
+
+                <p class="mb-2">
+                    <i class="fas 
+                        {% if riesgo_max == "ALTO" %}fa-skull-crossbones text-danger
+                        {% elif riesgo_max == "MEDIO" %}fa-exclamation-triangle text-warning
+                        {% else %}fa-check-circle text-success
+                        {% endif %} me-2"></i>
+
+                    {% if riesgo_max == "ALTO" %}
+                        Se detecta un riesgo financiero elevado con posible anomalía estructural.
+                    {% elif riesgo_max == "MEDIO" %}
+                        Existe una tendencia moderada a presentar anomalías.
+                    {% else %}
+                        El comportamiento financiero es estable y sin riesgo relevante.
+                    {% endif %}
+                </p>
+
+                <p class="text-muted small">
+                    Esta evaluación se basa en detección estadística con modelos de IA y reglas financieras.
+                </p>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endif %}
