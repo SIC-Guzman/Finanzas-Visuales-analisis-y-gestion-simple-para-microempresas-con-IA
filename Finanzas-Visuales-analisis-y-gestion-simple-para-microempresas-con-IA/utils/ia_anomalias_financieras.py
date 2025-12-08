@@ -1,4 +1,4 @@
-# modelo_anomalias.py
+# Deteccion y Prediccion de Anomalias Financieras
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import IsolationForest
@@ -6,9 +6,7 @@ from sklearn.linear_model import LinearRegression
 
 class ModeloAnomaliasFinancieras:
     """
-    Modelo híbrido: combina reglas financieras + IsolationForest.
-    - Reglas claras detectan anomalías estructurales.
-    - IA refuerza el resultado.
+    Modelo hibrido: combina reglas financieras + IsolationForest.
     """
 
     def __init__(self, totales_dict, contamination=0.15):
@@ -19,7 +17,7 @@ class ModeloAnomaliasFinancieras:
         self._prepare_features()
 
     # ===============================================================
-    #   GENERACIÓN DE FEATURES NUMÉRICOS
+    #   GENERACION DE FEATURES NUMÉRICOS
     # ===============================================================
     def _prepare_features(self):
         """Convierte totales en DataFrame + ratios."""
@@ -55,7 +53,7 @@ class ModeloAnomaliasFinancieras:
     # ===============================================================
     def evaluar_reglas_financieras(self):
         """
-        Evalúa indicadores clave y genera alertas explicables.
+        Evalua indicadores clave y genera alertas explicables.
         """
         df = self.feature_df.iloc[0]
         alertas = []
@@ -66,9 +64,9 @@ class ModeloAnomaliasFinancieras:
             alertas.append("Ingresos actuales negativos: comportamiento no razonable.")
             riesgo_total += 2
 
-        # --- 2. Utilidad negativa más del -30% de ingresos ---
+        # --- 2. Utilidad negativa mas del -30% de ingresos ---
         if df.utilidad_act < -0.3 * df.ingresos_act:
-            alertas.append("Pérdidas severas: utilidad < -30% de los ingresos.")
+            alertas.append("Perdidas severas: utilidad < -30% de los ingresos.")
             riesgo_total += 2
 
         # --- 3. Apalancamiento muy alto ---
@@ -81,7 +79,7 @@ class ModeloAnomaliasFinancieras:
             alertas.append("Liquidez limitada (<0.7): podría haber riesgo de pago.")
             riesgo_total += 1
 
-        # --- 5. Caída fuerte de ingresos (>30%) ---
+        # --- 5. Caida fuerte de ingresos (>30%) ---
         if df.crec_ing < -0.3:
             alertas.append("Caída importante de ingresos (>30%).")
             riesgo_total += 1
@@ -111,8 +109,8 @@ class ModeloAnomaliasFinancieras:
         """
         Entrena IsolationForest y combina con reglas financieras.
         """
-        # → Entrenamos el IsolationForest con la única fila disponible
-        #   (funciona como heurística adicional, no como base).
+        # Entrenamos el IsolationForest con la unica fila disponible
+        
         self.isof = IsolationForest(
             contamination=self.contamination,
             n_estimators=100,
@@ -124,10 +122,10 @@ class ModeloAnomaliasFinancieras:
 
         estado_ia = "ANÓMALO" if pred == -1 else "NORMAL"
 
-        # → Reglas financieras
+        # Reglas financieras
         reglas = self.evaluar_reglas_financieras()
 
-        # → Fusión de resultados
+        # Fusión de resultados
         if reglas["nivel_riesgo_reglas"] == "ALTO" or estado_ia == "ANÓMALO":
             estado_final = "RIESGO ALTO"
         elif reglas["nivel_riesgo_reglas"] == "MEDIO":
@@ -144,7 +142,7 @@ class ModeloAnomaliasFinancieras:
         }
 
     # ===============================================================
-    #   PREDICCIÓN FUTURA (SE MANTIENE IGUAL QUE TU VERSIÓN)
+    #   PREDICCION FUTURA 
     # ===============================================================
     def predecir_futuro_y_evaluar(self, anios=3):
         """
@@ -179,7 +177,7 @@ class ModeloAnomaliasFinancieras:
 
                 pred_dict[campo] = pred
 
-            # Evaluar IA (sin reglas)
+            # Evaluar IA 
             prob_anom = 0.0
             riesgo = "Bajo"
             if self.isof is not None:
