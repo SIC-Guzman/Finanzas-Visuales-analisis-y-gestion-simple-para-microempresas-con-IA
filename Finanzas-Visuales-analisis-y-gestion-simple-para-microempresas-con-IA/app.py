@@ -166,10 +166,10 @@ def process_analysis(filename):
 
         # --- Ejecutar Deteccion y Prediccion de anomalias Financieras ---
         try:
-            # Calcular totales públicos (no usar _privados)
+            # Calcular totales 
             totales = analizador._calcular_totales()
 
-            # Validar existencia de datos mínimos
+            # Validar existencia de datos
             if totales.get("total_ingresos_actual") is None:
                 raise Exception("Faltan datos para análisis de anomalías.")
 
@@ -181,41 +181,40 @@ def process_analysis(filename):
             det = model_anom.entrenar_y_detectar()
             pred = model_anom.predecir_futuro_y_evaluar(anios=3)
 
-            # Asegurar consistencia en costos
-            costos_actuales = totales.get("total_costos_actual", 0)
 
-            print("\n================= ANÁLISIS DE ANOMALÍAS =================\n")
+            detalles = [{
+                "anios": "Actual",
+                "ventas": totales.get("total_ingresos_actual", 0),
+                "tipo": det.get("estado_final", "DESCONOCIDO"),
+                "estado_ia": det.get("estado_ia", "DESCONOCIDO"),
+                "score_ia": det.get("score_ia", 0)
+            }]
 
-            # ===== RESULTADO ACTUAL =====
-            print(">>> ESTADO FINANCIERO ACTUAL\n")
-            print(f"Estado Final: {det.get('estado_final')}")
-            print(f"Estado IA: {det.get('estado_ia')}")
-            print(f"Score IA: {det.get('score_ia')}")
-            print(f"Nivel reglas: {det.get('reglas', {}).get('nivel_riesgo_reglas')}")
-            print("\nAlertas:")
-            for a in det.get("reglas", {}).get("alertas", []):
-                print(" -", a)
-
-            print("\nFeatures usadas por la IA:")
-            for k, v in det.get("features", {}).items():
-                print(f"  {k}: {v}")
-
-            # ===== PREDICCIONES =====
-            print("\n\n>>> PREDICCIONES FUTURAS\n")
-
+            predicciones = []
             for p in pred:
-                print(f"AÑO +{p['anios_offset']}")
-                print("Predicciones:")
-                for k, v in p["predicciones"].items():
-                    print(f"  {k}: {v}")
-                print(f"Probabilidad de anomalía: {p['prob_anomalia']}")
-                print(f"Riesgo: {p['riesgo']}")
-                print("-" * 50)
+                predicciones.append({
+                    "anios": f"Año +{p.get('anios_offset', 0)}",
+                    "predicciones": p.get("predicciones", {}),
+                    "prob": p.get("prob_anomalia", 0),
+                    "riesgo": p.get("riesgo", "BAJO")
+                })
 
+            # ===== 4. GUARDAR RESULTADOS PARA EL TEMPLATE =====
+
+            resultados["anomalias_financieras"] = {
+                "detalles": detalles,
+                "predicciones": predicciones,
+                "raw": {         
+                    "det": det,
+                    "pred": pred
+                }
+            }
+
+            #print(resultados["anomalias_financieras"])
 
         except Exception as e:
             resultados["anomalias_financieras"] = {
-                "error": f"Error en Anomalías Financieras: {str(e)}"
+                "error": f"Error en Anomalias Financieras: {str(e)}"
             }
 
         # --- Renderizar plantilla ---
