@@ -1,0 +1,65 @@
+/* Estilos personalizados para el analizador financiero */
+
+body {
+    background-color: #f8f9fa;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.card {
+    border: none;
+    border-radius: 15px;
+    transition: transform 0.2s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.card-header {
+    border-radius: 15px 15px 0 0 !important;
+    font-weight: 600;
+}
+
+.btn {
+    border-radius: 10px;
+    font-weight: 500;
+}
+
+.alert {
+    border-radius: 10px;
+    border: none;
+}
+
+/* Navbar personalizada */
+.navbar-brand {
+    font-weight: 700;
+}
+
+/* Tablas */
+.table th {
+    border-top: none;
+    font-weight: 600;
+    background-color: #f8f9fa;
+}
+
+/* Indicadores de rendimiento */
+.indicator-positive {
+    color: #198754;
+    font-weight: 600;
+}
+
+.indicator-negative {
+    color: #dc3545;
+    font-weight: 600;
+}
+
+.indicator-warning {
+    color: #ffc107;
+    font-weight: 600;
+}
+
+/* Loading spinner */
+.spinner-border {
+    width: 1.5rem;
+    height: 1.5rem;
+}
