@@ -2,7 +2,12 @@
 <div class="row">
     {% set ia_resumen = resultados.get('resultados_ia', {}).get('resumen', {}) %}
     {% set ia_predicciones = resultados.get('resultados_ia', {}).get('predicciones', {}) %}
-    
+    <!-- DEBUG TEMPORAL -->
+<div style="display: none;">
+  <p>resultados_ia existe: {{ resultados.get('resultados_ia') is not none }}</p>
+  <p>ia_resumen: {{ ia_resumen|tojson }}</p>
+  <p>ia_predicciones: {{ ia_predicciones|tojson }}</p>
+</div>
     <!-- KPI Card: Crecimiento Anual Promedio -->
     <div class="col-xl-3 col-md-6 mb-4">
         <div class="card border-start border-primary border-4 shadow h-100">
@@ -77,12 +82,13 @@
                 </h5>
             </div>
             <div class="card-body table-responsive">
+                {% if ia_predicciones and ia_predicciones.get('ventas') %}
                 <table class="table table-bordered table-hover">
                     <thead class="table-light">
                         <tr>
                             <th>Año</th>
-                            {% for i in range(ia_predicciones.get('ventas', [])|length) %}
-                                <th>{{ i + 1 }}</th>
+                            {% for i in range(ia_predicciones.get('ventas')|length) %}
+                                <th>Año {{ i + 1 }}</th>
                             {% endfor %}
                         </tr>
                     </thead>
@@ -90,17 +96,32 @@
                         <tr>
                             <th>Ventas (Q)</th>
                             {% for v in ia_predicciones.get('ventas', []) %}
-                                <td>{{ v | round(2) }}</td>
+                                <td>Q{{ v | round(2) }}</td>
                             {% endfor %}
                         </tr>
                         <tr>
                             <th>Costos (Q)</th>
                             {% for c in ia_predicciones.get('costos', []) %}
-                                <td>{{ c | round(2) }}</td>
+                                <td>Q{{ c | round(2) }}</td>
+                            {% endfor %}
+                        </tr>
+                        <tr class="table-info">
+                            <th>Utilidad (Q)</th>
+                            {% for i in range(ia_predicciones.get('ventas')|length) %}
+                                {% set venta = ia_predicciones.get('ventas', [])[i] if ia_predicciones.get('ventas')|length > i else 0 %}
+                                {% set costo = ia_predicciones.get('costos', [])[i] if ia_predicciones.get('costos')|length > i else 0 %}
+                                <td>Q{{ (venta - costo) | round(2) }}</td>
                             {% endfor %}
                         </tr>
                     </tbody>
                 </table>
+                {% else %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    No hay datos de predicciones disponibles.
+                    <small class="d-block mt-1">Debug: {{ resultados.get('resultados_ia', {})|tojson }}</small>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -116,7 +137,8 @@
                 </h5>
             </div>
             <div class="card-body">
-                {% set crecimiento = resultados['resultados_ia']['resumen'].get('crecimiento_anual_promedio_%', 0) %}
+                <!-- LÍNEA 119 CORREGIDA: -->
+                {% set crecimiento = resultados.get('resultados_ia', {}).get('resumen', {}).get('crecimiento_anual_promedio_%', 0) %}
 
                 <p class="mb-2">
                     <i class="fas 

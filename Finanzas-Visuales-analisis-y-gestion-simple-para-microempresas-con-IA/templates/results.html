@@ -1,228 +1,189 @@
 {% extends "base.html" %}
-{# jshint ignore:start #}
 {% block title %}Resultados del Análisis{% endblock %}
-<!-- Cargar Chart.js y nuestro charts.js -->
 
 {% block content %}
+
+<!-- Librerías necesarias -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+
 <div class="row">
     <div class="col-12">
-        <!-- Header -->
+
+        <!-- Encabezado -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
                 <h2 class="text-primary">
                     <i class="fas fa-chart-line me-2"></i>Resultados del Análisis
                 </h2>
+
                 <p class="text-muted mb-0">Archivo: {{ filename }}</p>
-                {% if empresa.nombre %}
-                <p class="text-muted">Empresa: {{ empresa.nombre }}</p>
+
+                {% if empresa and empresa.get('nombre') %}
+                    <p class="text-muted">Empresa: {{ empresa.get('nombre') }}</p>
                 {% endif %}
             </div>
+
             <div>
                 <button id="downloadPdfBtn" class="btn btn-success me-2">
                     <i class="fas fa-file-pdf me-1"></i>Descargar Reporte PDF
                 </button>
+
                 <a href="{{ url_for('upload_page') }}" class="btn btn-outline-primary">
                     <i class="fas fa-plus me-1"></i>Nuevo Análisis
                 </a>
             </div>
         </div>
 
-        <!-- Pestañas de Navegación -->
+        <!-- Pestañas -->
         <ul class="nav nav-tabs mb-4" id="analysisTabs" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="resumen-tab" data-bs-toggle="tab" 
-                        data-bs-target="#resumen" type="button" role="tab">
+            <li class="nav-item">
+                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#resumen">
                     <i class="fas fa-home me-1"></i>Resumen
                 </button>
             </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="horizontal-tab" data-bs-toggle="tab" 
-                        data-bs-target="#horizontal" type="button" role="tab">
+
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#horizontal">
                     <i class="fas fa-arrows-alt-h me-1"></i>Análisis Horizontal
                 </button>
             </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="vertical-tab" data-bs-toggle="tab" 
-                        data-bs-target="#vertical" type="button" role="tab">
+
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#vertical">
                     <i class="fas fa-arrows-alt-v me-1"></i>Análisis Vertical
                 </button>
             </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="razones-tab" data-bs-toggle="tab" 
-                        data-bs-target="#razones" type="button" role="tab">
+
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#razones">
                     <i class="fas fa-calculator me-1"></i>Razones Financieras
                 </button>
             </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="equilibrio-tab" data-bs-toggle="tab" 
-                        data-bs-target="#equilibrio" type="button" role="tab">
+
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#equilibrio">
                     <i class="fas fa-balance-scale me-1"></i>Punto de Equilibrio
                 </button>
             </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="predicciones-tab" data-bs-toggle="tab" 
-                        data-bs-target="#predicciones" type="button" role="tab">
+
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#predicciones">
                     <i class="fas fa-robot me-1"></i>Predicciones e IA
                 </button>
             </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="anomalias-tab" data-bs-toggle="tab" 
-                        data-bs-target="#anomalias" type="button" role="tab">
+
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#anomalias">
                     <i class="fas fa-bug me-1"></i>Anomalías Financieras
+                </button>
+            </li>
+
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#insights">
+                    <i class="fas fa-lightbulb me-1"></i>Insights Automáticos
                 </button>
             </li>
         </ul>
 
-        <!-- Contenido de Pestañas -->
-        <div class="tab-content" id="analysisTabsContent">
-            
-            <!-- Pestaña 1: Resumen -->
-            <div class="tab-pane fade show active" id="resumen" role="tabpanel">
-                {% include 'partials/_resumen_tab.html' %}
+        <!-- Contenido de pestañas -->
+        <div class="tab-content">
+
+            <div class="tab-pane fade show active" id="resumen">
+                {% include "partials/_resumen_tab.html" %}
             </div>
 
-            <!-- Pestaña 2: Análisis Horizontal -->
-            <div class="tab-pane fade" id="horizontal" role="tabpanel">
-                {% include 'partials/_horizontal_tab.html' %}
+            <div class="tab-pane fade" id="horizontal">
+                {% include "partials/_horizontal_tab.html" %}
             </div>
 
-            <!-- Pestaña 3: Análisis Vertical -->
-            <div class="tab-pane fade" id="vertical" role="tabpanel">
-                {% include 'partials/_vertical_tab.html' %}
+            <div class="tab-pane fade" id="vertical">
+                {% include "partials/_vertical_tab.html" %}
             </div>
 
-            <!-- Pestaña 4: Razones Financieras -->
-            <div class="tab-pane fade" id="razones" role="tabpanel">
-                {% include 'partials/_razones_tab.html' %}
+            <div class="tab-pane fade" id="razones">
+                {% include "partials/_razones_tab.html" %}
             </div>
 
-            <!-- Pestaña 5: Punto de Equilibrio -->
-            <div class="tab-pane fade" id="equilibrio" role="tabpanel">
-                {% include 'partials/_equilibrio_tab.html' %}
-            </div>
-            <!-- Pestaña 6: Predicciones e IA -->
-            <div class="tab-pane fade" id="predicciones" role="tabpanel">
-                {% include 'partials/_predicciones_tab.html' %}
-            </div>
-            <!-- Pestaña 7: Anomalias Financieras -->
-            <div class="tab-pane fade" id="anomalias" role="tabpanel">
-                {% include 'partials/_anomalias_tab.html' %}
+            <div class="tab-pane fade" id="equilibrio">
+                {% include "partials/_equilibrio_tab.html" %}
             </div>
 
+            <div class="tab-pane fade" id="predicciones">
+                {% include "partials/_predicciones_tab.html" %}
+            </div>
+
+            <div class="tab-pane fade" id="anomalias">
+                {% include "partials/_anomalias_tab.html" %}
+            </div>
+
+            <div class="tab-pane fade" id="insights">
+                {% include "partials/_insights_tab.html" %}
+            </div>
 
         </div>
     </div>
 </div>
 
+
+<!-- --- DATOS PARA JAVASCRIPT (compatible con VSCode y Flask) --- -->
+<!-- eslint-disable -->
+<!-- jshint ignore:start -->
+
 <script>
-    // VERSIÓN MEJORADA - Incluye datos para gráficos
-    window.financialData = {
-        resultados: {{ resultados.resultados | tojson | safe }},
-        empresa: {{ empresa | tojson | safe }},
-        filename: "{{ filename }}",
-        graficos: {{ resultados.graficos | tojson | safe }}
-    };
-    console.log('📊 DATOS REALES CARGADOS:', window.financialData);
+window.financialData = {
+    resultados: {{ resultados.get("resultados", {}) | tojson | safe }},
+    empresa: {{ empresa | default({}) | tojson | safe }},
+    filename: "{{ filename or '' }}",
+    graficos: {{ resultados.get("graficos", {}) | tojson | safe }}
+};
+
+console.log("📊 DATOS CARGADOS:", window.financialData);
 </script>
+
+
+<!-- --- Lógica PDF --- -->
 <script>
-// Función para descargar PDF
 async function downloadPDF() {
-    console.log('🎯 DEBUG: downloadPDF() ejecutándose!');
-    
-    const btn = document.getElementById('downloadPdfBtn');
-    const originalText = btn.innerHTML;
-    
+    const btn = document.getElementById("downloadPdfBtn");
+    const original = btn.innerHTML;
+
     try {
-        // Mostrar estado de carga
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Generando PDF...';
         btn.disabled = true;
-        
-        console.log('📤 DEBUG: Enviando request...');
-        
-        // Llamar al backend para generar PDF
-        const response = await fetch('/generar_pdf', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                filename: "{{ filename }}"
-            })
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Generando PDF...';
+
+        const response = await fetch("/generar_pdf", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ filename: "{{ filename }}" })
         });
-        
-        console.log('📥 DEBUG: Response recibida:', response.status);
-        
-        if (response.ok) {
-            // Descargar el PDF
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `reporte_financiero_{{ filename }}.pdf`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-            
-            console.log('✅ DEBUG: PDF descargado!');
-            mostrarMensaje('✅ PDF generado y descargado exitosamente', 'success');
-        } else {
-            const error = await response.text();
-            throw new Error(error);
-        }
-        
-    } catch (error) {
-        console.error('❌ DEBUG: Error:', error);
-        mostrarMensaje('❌ Error al generar el PDF: ' + error.message, 'danger');
+
+        if (!response.ok)
+            throw new Error(await response.text());
+
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "reporte_financiero_{{ filename }}.pdf";
+        a.click();
+
+        URL.revokeObjectURL(url);
+
+    } catch (err) {
+        console.error("❌ Error al generar PDF:", err);
+        alert("Error al generar PDF: " + err.message);
     } finally {
-        // Restaurar botón
-        btn.innerHTML = originalText;
         btn.disabled = false;
+        btn.innerHTML = original;
     }
 }
 
-// Función para mostrar mensajes
-function mostrarMensaje(mensaje, tipo) {
-    const alerta = document.createElement('div');
-    alerta.className = `alert alert-${tipo} alert-dismissible fade show`;
-    alerta.innerHTML = `
-        ${mensaje}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    
-    const container = document.querySelector('.container');
-    container.insertBefore(alerta, container.firstChild);
-    
-    setTimeout(() => {
-        if (alerta.parentNode) {
-            alerta.remove();
-        }
-    }, 5000);
-}
-
-// ✅ EVENT LISTENER MEJORADO - Se ejecuta cuando el DOM está listo
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🎯 DEBUG: DOM cargado, buscando botón...');
-    
-    const pdfBtn = document.getElementById('downloadPdfBtn');
-    console.log('🎯 DEBUG: Botón encontrado:', pdfBtn);
-    
-    if (pdfBtn) {
-        pdfBtn.addEventListener('click', downloadPDF);
-        console.log('✅ DEBUG: Event listener agregado correctamente');
-        
-        // También hacer la función global para probar manualmente
-        window.testPDF = downloadPDF;
-    } else {
-        console.error('❌ DEBUG: No se encontró el botón con id downloadPdfBtn');
-    }
+document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("downloadPdfBtn")
+        .addEventListener("click", downloadPDF);
 });
-
-// ✅ También exponer la función globalmente para probar manualmente
-window.downloadPDF = downloadPDF;
-console.log('🔧 DEBUG: downloadPDF disponible globalmente');
 </script>
 
 {% endblock %}

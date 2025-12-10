@@ -160,7 +160,7 @@ class AnalizadorFinanciero:
             for i in range(min(5, len(df))):
                 print(f"   Fila {i}: {df.iloc[i].tolist()}")
             
-            # ESTRATEGIA MEJORADA: Procesar solo las FILAS, no celdas individuales
+           
             conceptos_procesados = set()
             
             for idx in range(len(df)):

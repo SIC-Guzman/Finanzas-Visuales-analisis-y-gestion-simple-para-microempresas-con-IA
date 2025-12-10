@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Error en Visualización</title>
+    <style>
+        body { padding: 20px; font-family: Arial, sans-serif; }
+        .error-box { background: #f8d7da; border: 1px solid #f5c6cb; padding: 20px; border-radius: 5px; }
+        .debug-box { background: #e2e3e5; padding: 15px; margin-top: 20px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="error-box">
+        <h2>⚠️ Error al mostrar resultados</h2>
+        <p><strong>Error:</strong> {{ error }}</p>
+        <p>Los datos fueron procesados correctamente, pero hubo un problema al visualizarlos.</p>
+    </div>
+    
+    <div class="debug-box">
+        <h4>Información de Depuración:</h4>
+        <p><strong>Estructura de datos recibida:</strong></p>
+        <ul>
+            {% for key in datos_estructura %}
+            <li>{{ key }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    
+    <a href="/upload">← Volver a subir archivo</a>
+</body>
+</html>

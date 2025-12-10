@@ -9,6 +9,8 @@ from utils.ia_anomalias_financieras import ModeloAnomaliasFinancieras
 from utils.analizador_financiero1 import AnalizadorFinanciero
 from flask import send_file
 from utils.pdf_generator import PDFReportGenerator 
+from utils.generador_insights import GeneradorInsights
+from types import SimpleNamespace
 
 # ==================== 2. CONFIGURACIÓN DE FLASK ====================
 app = Flask(__name__)
@@ -138,97 +140,246 @@ def process_analysis(filename):
         analizador = AnalizadorFinanciero(filepath)
         resultados = analizador.generar_reporte_completo()
 
+        # --- Debug: mostrar lo que trae resultados ---
+        print("🔎 DEBUG: Tipo de 'resultados':", type(resultados))
+        try:
+            print("🔎 DEBUG: Claves en resultados:", list(resultados.keys()) if isinstance(resultados, dict) else "no es dict")
+        except Exception:
+            print("🔎 DEBUG: no se pudo listar claves de resultados")
+
+        # --- Asegurar que 'resultados' es un dict ---
+        if not isinstance(resultados, dict):
+            resultados = {}
+
         # --- Inicializar campos obligatorios para el template ---
-        if 'resumen' not in resultados or resultados['resumen'] is None:
-            resultados['resumen'] = {}
-        if 'resultados' not in resultados or resultados['resultados'] is None:
-            resultados['resultados'] = {}
-        if 'graficos' not in resultados or resultados['graficos'] is None:
-            resultados['graficos'] = {}
+        resultados.setdefault('resumen', {})      # si falta, crear vacío
+        resultados.setdefault('resultados', {})   # sub-diccionario principal
+        resultados.setdefault('graficos', {})     # datos para charts
 
-        # --- Ejecutar predicción de IA de manera segura ---
+        # --- Predicción IA de ventas y costos ---
+        # --- Predicción IA de ventas y costos ---
         try:
-            # Obtener ventas y costos desde el analizador
+            print("🔄 Intentando obtener ventas y costos para IA...")
             ventas, costos = analizador.obtener_ventas_y_costos()
-
-            # Crear modelo IA y predecir próximos 3 años
-            modelo_ia = ModeloIAVentasCostos(ventas=ventas, costos=costos)
-            resultados_ia = modelo_ia.predecir_proximos_anios(anios=3)
-
-            # Guardar resultados de IA en un subcampo
-            resultados['resultados_ia'] = resultados_ia
-
-        except Exception as e:
-            # No interrumpe la carga del template; solo agrega mensaje de error
-            resultados['resultados_ia'] = {
-                'error': f"No se pudieron generar predicciones de IA: {str(e)}"
-            }
-
-        # --- Ejecutar Deteccion y Prediccion de anomalias Financieras ---
-        try:
-            # Calcular totales 
-            totales = analizador._calcular_totales()
-
-            # Validar existencia de datos
-            if totales.get("total_ingresos_actual") is None:
-                raise Exception("Faltan datos para análisis de anomalías.")
-
-            model_anom = ModeloAnomaliasFinancieras(
-                totales,          
-                contamination=0.12
-            )
-
-            det = model_anom.entrenar_y_detectar()
-            pred = model_anom.predecir_futuro_y_evaluar(anios=3)
-
-
-            detalles = [{
-                "anios": "Actual",
-                "ventas": totales.get("total_ingresos_actual", 0),
-                "tipo": det.get("estado_final", "DESCONOCIDO"),
-                "estado_ia": det.get("estado_ia", "DESCONOCIDO"),
-                "score_ia": det.get("score_ia", 0)
-            }]
-
-            predicciones = []
-            for p in pred:
-                predicciones.append({
-                    "anios": f"Año +{p.get('anios_offset', 0)}",
-                    "predicciones": p.get("predicciones", {}),
-                    "prob": p.get("prob_anomalia", 0),
-                    "riesgo": p.get("riesgo", "BAJO")
-                })
-
-            # ===== 4. GUARDAR RESULTADOS PARA EL TEMPLATE =====
-
-            resultados["anomalias_financieras"] = {
-                "detalles": detalles,
-                "predicciones": predicciones,
-                "raw": {         
-                    "det": det,
-                    "pred": pred
+            print(f"✅ Ventas obtenidas: {ventas}")
+            print(f"✅ Costos obtenidos: {costos}")
+            
+            if ventas and costos and len(ventas) > 0 and len(costos) > 0:
+                modelo_ia = ModeloIAVentasCostos(ventas=ventas, costos=costos)
+                resultados_ia = modelo_ia.predecir_proximos_anios(anios=3)
+                resultados['resultados_ia'] = resultados_ia
+                print(f"✅ Predicciones IA generadas: {resultados_ia}")
+            else:
+                resultados['resultados_ia'] = {
+                    'error': 'Datos insuficientes para predicciones IA',
+                    'ventas_recibidas': ventas,
+                    'costos_recibidos': costos
                 }
+                print("⚠️ Datos insuficientes para IA")
+                
+        except Exception as e:
+            resultados['resultados_ia'] = {
+                'error': f"No se pudieron generar predicciones de IA: {str(e)}",
+                'detalle': 'Revisar método obtener_ventas_y_costos()'
             }
+            print(f"❌ Error en IA ventas/costos: {e}")
+            import traceback
+            traceback.print_exc()
 
-            #print(resultados["anomalias_financieras"])
+        # --- Anomalías financieras ---
+        # --- Anomalías financieras ---
+        try:
+            print("🔄 Intentando detectar anomalías...")
+            totales = analizador._calcular_totales()
+            print(f"✅ Totales calculados: {totales}")
+            
+            if totales and totales.get("total_ingresos_actual") is not None:
+                model_anom = ModeloAnomaliasFinancieras(totales, contamination=0.12)
+                det = model_anom.entrenar_y_detectar()
+                pred = model_anom.predecir_futuro_y_evaluar(anios=3)
+
+                detalles = [{
+                    "anios": "Actual",
+                    "ventas": totales.get("total_ingresos_actual", 0),
+                    "tipo": det.get("estado_final", "DESCONOCIDO"),
+                    "estado_ia": det.get("estado_ia", "DESCONOCIDO"),
+                    "score_ia": det.get("score_ia", 0)
+                }]
+
+                predicciones = []
+                for p in pred:
+                    predicciones.append({
+                        "anios": f"Año +{p.get('anios_offset', 0)}",
+                        "predicciones": p.get("predicciones", {}),
+                        "prob": p.get("prob_anomalia", 0),
+                        "riesgo": p.get("riesgo", "BAJO")
+                    })
+
+                resultados["anomalias_financieras"] = {
+                    "detalles": detalles,
+                    "predicciones": predicciones,
+                    "raw": {"det": det, "pred": pred}
+                }
+                print(f"✅ Anomalías generadas: {len(predicciones)} predicciones")
+            else:
+                resultados["anomalias_financieras"] = {
+                    "error": "Faltan datos para análisis de anomalías",
+                    "totales_obtenidos": totales
+                }
+                print("⚠️ Totales insuficientes para anomalías")
 
         except Exception as e:
             resultados["anomalias_financieras"] = {
                 "error": f"Error en Anomalias Financieras: {str(e)}"
             }
+            print(f"❌ Error en anomalias: {e}")
+            import traceback
+            traceback.print_exc()
+
+        # --- Generador de insights ---
+        try:
+            print("🔄 Iniciando generador de insights...")
+            
+            # 1. Obtener datos correctamente
+            totales = analizador._calcular_totales() if hasattr(analizador, '_calcular_totales') else {}
+            
+            # 2. Obtener los resultados financieros (ya calculados)
+            resultados_financieros = resultados.get('resultados', {})
+            
+            print(f"🔍 DEBUG - Estructura de resultados_financieros:")
+            print(f"   - Claves: {list(resultados_financieros.keys())}")
+            
+            # 3. Asegurar que resultados_ia sea una lista
+            resultados_ia = resultados.get('resultados_ia', [])
+            if isinstance(resultados_ia, dict) and 'error' in resultados_ia:
+                resultados_ia = []  # Si hay error, usar lista vacía
+            
+            # 4. VERIFICAR DATOS ANTES DE CREAR GENERADOR
+            print(f"🔍 DEBUG - Datos para GeneradorInsights:")
+            print(f"   - totales: {type(totales)}, keys: {list(totales.keys())[:3] if totales else 'vacío'}")
+            print(f"   - razones: {type(resultados_financieros.get('razones', {}))}")
+            print(f"   - horizontal: {type(resultados_financieros.get('horizontal', {}))}")
+            print(f"   - vertical: {type(resultados_financieros.get('vertical', {}))}")
+            print(f"   - predicciones: {type(resultados_ia)}")
+            print(f"   - anomalias: {type(resultados.get('anomalias_financieras', {}))}")
+            
+            # 4. Crear generador con datos validados
+            gen = GeneradorInsights(
+                totales=totales,
+                razones=resultados_financieros.get('razones', {}),
+                horizontal=resultados_financieros.get('horizontal', {}),
+                vertical=resultados_financieros.get('vertical', {}),
+                predicciones=resultados_ia,
+                anomalias=resultados.get('anomalias_financieras', {})
+            )
+            
+            # 5. Generar insights
+            insights_obj = gen.generar_insights()
+            
+            print(f"✅ Insights generados - Tipo: {type(insights_obj)}")
+            print(f"✅ Insights generados - Contenido: {insights_obj}")
+            
+            # 6. Asegurar estructura correcta
+            if isinstance(insights_obj, dict):
+                resultados['insights'] = insights_obj
+                print(f"✅ Insights agregados a resultados como dict")
+                print(f"   - Claves: {list(insights_obj.keys())}")
+                if 'insights' in insights_obj:
+                    print(f"   - Número de insights: {len(insights_obj.get('insights', []))}")
+            else:
+                print(f"⚠️ Insights no eran dict, se convierten")
+                resultados['insights'] = {
+                    "resumen": "Insights generados correctamente",
+                    "insights": insights_obj if isinstance(insights_obj, list) else [],
+                    "recomendaciones": []
+                }
+            
+        except Exception as e:
+            print(f"❌ ERROR en generador de insights: {e}")
+            import traceback
+            traceback.print_exc()
+            
+            # Estructura mínima para evitar errores en la plantilla
+            resultados['insights'] = {
+                "resumen": "Error al generar insights automáticos",
+                "insights": [],
+                "recomendaciones": []
+            }
+            print(f"🔧 Se estableció estructura mínima de insights")
+
+
+         # Asegurar que todas las claves necesarias existan
+        resultados.setdefault('resumen', {})
+        resultados.setdefault('insights', {})
+        resultados.setdefault('resultados', {})
+        resultados.setdefault('graficos', {})
+        resultados.setdefault('datos_entrada', {})
+
+        # Convertir None a dict vacío si es necesario
+        if resultados['resumen'] is None:
+            resultados['resumen'] = {}
+        if resultados['insights'] is None:
+            resultados['insights'] = {}
+
+        print("✅ DEBUG - Estructura final:")
+        print(f"   - resumen keys: {list(resultados.get('resumen', {}).keys())}")
+        print(f"   - resumen contenido: {resultados.get('resumen', {})}")
+        print(f"   - insights keys: {list(resultados.get('insights', {}).keys())}")
+        
+        # Debug adicional - ¡SIN intentar acceder con punto!
+        print("🔍 DEBUG - Verificando estructura...")
+        print(f"   - Acceso seguro con get: {resultados.get('resumen')}")
+        print(f"   - Tipo de resultados: {type(resultados)}")
+        print(f"   - ¿Es dict?: {isinstance(resultados, dict)}")
 
         # --- Renderizar plantilla ---
-        return render_template(
-            'results.html',
-            resultados=resultados,
-            filename=filename,
-            empresa=resultados.get('datos_entrada', {}).get('empresa', {})
-        )
+        print("🔎 DEBUG: Antes de renderizar, claves en resultados:", list(resultados.keys()))
+        # Verificación EXTRA de seguridad
+        print("🛡️ VERIFICACIÓN EXTRA:")
+        print(f"   - ¿resultados tiene 'resumen'?: {'resumen' in resultados}")
+        print(f"   - ¿resultados.resumen existe? (NO usar): Vamos a intentar...")
+
+        # NO HAGAS esto en producción, solo para debug:
+        try:
+            # Esto fallará si resultados no es DotDict
+            temp = resultados.resumen
+            print(f"   - ¡SORPRESA! resultados.resumen funciona: {temp}")
+        except AttributeError:
+            print(f"   - Bien, resultados.resumen NO funciona (como esperábamos)")
+            
+        print(f"   - Acceso correcto: resultados['resumen']: {resultados['resumen']}")
+        # JUSTO ANTES del return, reemplaza resultados con un dict nuevo
+        resultados_final = dict(resultados)  # Crea una copia limpia
+
+        print("🆕 Dict final creado:")
+        print(f"   - Tipo: {type(resultados_final)}")
+        print(f"   - Claves: {list(resultados_final.keys())}")
+
+        try:
+    # Intentar renderizar normalmente
+            return render_template(
+                'results.html',
+                resultados=resultados_final,
+                filename=filename,
+                empresa=resultados_final.get('datos_entrada', {}).get('empresa', {})
+            )
+        except Exception as e:
+            # Capturar CUALQUIER error durante el renderizado
+            print(f"🚨 ERROR CRÍTICO EN RENDER_TEMPLATE: {str(e)}")
+            print(f"🚨 Traceback completo:")
+            import traceback
+            traceback.print_exc()
+            
+            # Renderizar una página de error específica
+            flash(f'Error al mostrar resultados: {str(e)}', 'error')
+            return render_template('error_render.html', 
+                                error=str(e),
+                                datos_estructura=resultados_final.keys())
 
     except Exception as e:
+        print("❌ ERROR en process_analysis:", e)
         flash(f'Error en análisis: {str(e)}', 'error')
         return redirect(url_for('upload_page'))
-
 
 @app.route('/analysis')
 def analysis_demo():

@@ -1,0 +1,100 @@
+<!-- Insights Automáticos Generados por IA -->
+<div class="row">
+    <div class="col-12">
+        <h3 class="text-primary mb-4">
+            <i class="fas fa-brain me-2"></i>Insights Automáticos Generados por IA
+        </h3>
+        
+        {% set insights_data = resultados.get('insights', {}) %}
+        
+        {% if insights_data %}
+            <!-- Resumen General -->
+            {% if insights_data.get('resumen') %}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file-alt me-2"></i>Resumen de Insights
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="lead">{{ insights_data.get('resumen', 'Sin resumen disponible') }}</p>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Lista de Insights -->
+            {% if insights_data.get('insights') %}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-lightbulb me-2"></i>Insights Detectados
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for insight in insights_data.get('insights', []) %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100 border 
+                                {% if 'positivo' in insight.titulo|lower or 'excelente' in insight.titulo|lower or 'sólido' in insight.titulo|lower %}border-success
+                                {% elif 'precaución' in insight.titulo|lower or 'atención' in insight.titulo|lower %}border-warning
+                                {% elif 'negativo' in insight.titulo|lower or 'riesgo' in insight.titulo|lower %}border-danger
+                                {% else %}border-info{% endif %}">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-start">
+                                        <i class="fas 
+                                            {% if 'positivo' in insight.titulo|lower or 'excelente' in insight.titulo|lower or 'sólido' in insight.titulo|lower %}fa-check-circle text-success
+                                            {% elif 'precaución' in insight.titulo|lower or 'atención' in insight.titulo|lower %}fa-exclamation-triangle text-warning
+                                            {% elif 'negativo' in insight.titulo|lower or 'riesgo' in insight.titulo|lower %}fa-exclamation-circle text-danger
+                                            {% else %}fa-info-circle text-info{% endif %}
+                                            me-3 fa-lg mt-1"></i>
+                                        <div>
+                                            <h6 class="card-title">{{ insight.get('titulo', 'Insight') }}</h6>
+                                            <p class="card-text mb-0">{{ insight.get('descripcion', 'Sin descripción') }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Recomendaciones -->
+            {% if insights_data.get('recomendaciones') and insights_data.get('recomendaciones')|length > 0 %}
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning">
+                    <h5 class="mb-0">
+                        <i class="fas fa-clipboard-check me-2"></i>Recomendaciones
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        {% for recomendacion in insights_data.get('recomendaciones', []) %}
+                        <li class="list-group-item d-flex align-items-start">
+                            <i class="fas fa-arrow-right text-primary me-3 mt-1"></i>
+                            <div>
+                                <p class="mb-0">{{ recomendacion }}</p>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+            
+        {% else %}
+            <!-- Mensaje si no hay insights -->
+            <div class="alert alert-warning">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
+                    <div>
+                        <h5 class="alert-heading">No se generaron insights automáticos</h5>
+                        <p class="mb-0">Los insights basados en IA no están disponibles para este análisis.</p>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
