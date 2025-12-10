@@ -2,12 +2,7 @@
 <div class="row">
     {% set ia_resumen = resultados.get('resultados_ia', {}).get('resumen', {}) %}
     {% set ia_predicciones = resultados.get('resultados_ia', {}).get('predicciones', {}) %}
-    <!-- DEBUG TEMPORAL -->
-<div style="display: none;">
-  <p>resultados_ia existe: {{ resultados.get('resultados_ia') is not none }}</p>
-  <p>ia_resumen: {{ ia_resumen|tojson }}</p>
-  <p>ia_predicciones: {{ ia_predicciones|tojson }}</p>
-</div>
+
     <!-- KPI Card: Crecimiento Anual Promedio -->
     <div class="col-xl-3 col-md-6 mb-4">
         <div class="card border-start border-primary border-4 shadow h-100">
