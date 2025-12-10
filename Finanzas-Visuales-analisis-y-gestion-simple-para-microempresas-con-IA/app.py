@@ -486,13 +486,13 @@ def descargar_plantilla(tipo):
     try:
         if tipo == 'excel_simple':
             return send_file(
-                'plantillas/Indicadores_Financieros_Basicos_Calculados.xlsx',
+                'plantillas/Plantilla_Financiera_Simple.xlsx',
                 as_attachment=True,
                 download_name='Plantilla_Financiera_Simple.xlsx'
             )
         elif tipo == 'excel_avanzado':
             return send_file(
-                'plantillas/Indicadores_Financieros_Basicos_Calculados_v3.xlsx',
+                'plantillas/Plantilla_Financiera_Avanzada.xlsx',
                 as_attachment=True,
                 download_name='Plantilla_Financiera_Avanzada.xlsx'
             )
