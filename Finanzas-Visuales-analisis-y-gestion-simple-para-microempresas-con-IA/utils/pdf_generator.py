@@ -7,13 +7,32 @@ from reportlab.lib.units import inch
 from reportlab.pdfgen import canvas
 from datetime import datetime
 import json
+from reportlab.platypus import KeepTogether
 
 class PDFReportGenerator:
-    def __init__(self, analizador, filename, empresa_data):
+    def __init__(self, analizador, filename, empresa_data, resultados_completos=None):
         self.analizador = analizador
         self.filename = filename
         self.empresa_data = empresa_data
-        self.report_data = analizador.generar_reporte_completo()
+        
+        # Asegurar que resultados_completos es un dict
+        if resultados_completos and isinstance(resultados_completos, dict):
+            self.report_data = resultados_completos
+        else:
+            # Generar desde el analizador
+            self.report_data = analizador.generar_reporte_completo()
+        
+        # Asegurar que todas las claves necesarias existan
+        self.report_data.setdefault('resumen', {})
+        self.report_data.setdefault('resultados', {})
+        self.report_data.setdefault('resultados_ia', {})
+        self.report_data.setdefault('anomalias_financieras', {})
+        self.report_data.setdefault('insights', {})
+        self.report_data.setdefault('graficos', {})
+        
+        print(f"📊 PDF Generator inicializado:")
+        print(f"   - Claves en report_data: {list(self.report_data.keys())}")
+        print(f"   - ¿Tiene 'resumen'?: {'resumen' in self.report_data}")
         
     def generar_reporte_pdf(self):
         """Genera el reporte PDF completo"""
@@ -69,28 +88,44 @@ class PDFReportGenerator:
             story.append(info)
             story.append(Spacer(1, 20))
             
+            # ORDEN MEJORADO DE LAS SECCIONES:
             # 1. RESUMEN EJECUTIVO
             story.append(self._crear_seccion_resumen(styles))
             story.append(Spacer(1, 15))
             
-            # 2. ANÁLISIS HORIZONTAL
+            # 2. INSIGHTS AUTOMÁTICOS (ahora al principio)
+            if 'insights' in self.report_data:
+                story.append(self._crear_seccion_insights(styles))
+                story.append(Spacer(1, 15))
+            
+            # 3. ANÁLISIS HORIZONTAL
             story.append(self._crear_seccion_horizontal(styles))
             story.append(Spacer(1, 15))
             
-            # 3. ANÁLISIS VERTICAL
+            # 4. ANÁLISIS VERTICAL
             story.append(self._crear_seccion_vertical(styles))
             story.append(Spacer(1, 15))
             
-            # 4. RAZONES FINANCIERAS
+            # 5. RAZONES FINANCIERAS
             story.append(self._crear_seccion_razones(styles))
             story.append(Spacer(1, 15))
             
-            # 5. PUNTO DE EQUILIBRIO
+            # 6. PUNTO DE EQUILIBRIO
             if self.report_data['resultados']['punto_equilibrio']:
                 story.append(self._crear_seccion_equilibrio(styles))
                 story.append(Spacer(1, 15))
             
-            # 6. INTERPRETACIÓN
+            # 7. PREDICCIONES IA
+            if 'resultados_ia' in self.report_data:
+                story.append(self._crear_seccion_predicciones(styles))
+                story.append(Spacer(1, 15))
+            
+            # 8. ANOMALÍAS FINANCIERAS
+            if 'anomalias_financieras' in self.report_data:
+                story.append(self._crear_seccion_anomalias(styles))
+                story.append(Spacer(1, 15))
+            
+            # 9. INTERPRETACIÓN FINAL
             story.append(self._crear_seccion_interpretacion(styles))
             
             # Construir PDF
@@ -325,7 +360,194 @@ class PDFReportGenerator:
         """
         
         return Paragraph(texto, interpretacion_style)
-    
+
+    def _crear_seccion_predicciones(self, styles):
+        """Crea la sección de predicciones IA - DEVUELVE UN SOLO ELEMENTO"""
+        resultados_ia = self.report_data.get('resultados_ia', {})
+        
+        if 'error' in resultados_ia:
+            return Paragraph(f"<b>Predicciones IA:</b> {resultados_ia['error']}", styles['Normal'])
+        
+        if 'predicciones' not in resultados_ia:
+            return Paragraph("<b>Predicciones IA:</b> No disponibles", styles['Normal'])
+        
+        # Título de la sección
+        titulo_style = ParagraphStyle(
+            'TituloPredicciones',
+            parent=styles['Heading2'],
+            fontSize=14,
+            spaceAfter=12,
+            textColor=colors.HexColor('#8E44AD')
+        )
+        titulo = Paragraph("📊 PREDICCIONES IA - PROYECCIÓN 3 AÑOS", titulo_style)
+        
+        # Crear tabla simple
+        predicciones = resultados_ia['predicciones']
+        ventas = predicciones.get('ventas', [])
+        costos = predicciones.get('costos', [])
+        
+        data = [['AÑO', 'VENTAS (Q)', 'COSTOS (Q)', 'CRECIMIENTO %']]
+        
+        for i in range(min(len(ventas), 3)):
+            venta = ventas[i] if i < len(ventas) else 0
+            costo = costos[i] if i < len(costos) else 0
+            
+            # Calcular crecimiento vs año anterior
+            crecimiento = 0
+            if i > 0 and ventas[i-1] > 0:
+                crecimiento = ((venta - ventas[i-1]) / ventas[i-1]) * 100
+            
+            data.append([
+                f"Año {i+1}",
+                f"Q{venta:,.2f}",
+                f"Q{costo:,.2f}",
+                f"{crecimiento:+.1f}%" if i > 0 else "N/A"
+            ])
+        
+        table = Table(data, colWidths=[1*inch, 1.5*inch, 1.5*inch, 1*inch])
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#8E44AD')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#F4ECF7')),
+            ('FONTSIZE', (0, 1), (-1, -1), 9),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#D7BDE2')),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F9F9F9')])
+        ]))
+        
+        # Crear un contenedor con título y tabla
+        from reportlab.platypus import KeepTogether
+        return KeepTogether([titulo, Spacer(1, 6), table])
+
+    def _crear_seccion_anomalias(self, styles):
+        """Crea la sección de anomalías financieras - DEVUELVE UN SOLO ELEMENTO"""
+        anomalias = self.report_data.get('anomalias_financieras', {})
+        
+        if 'error' in anomalias:
+            return Paragraph(f"<b>Anomalías:</b> {anomalias['error']}", styles['Normal'])
+        
+        predicciones = anomalias.get('predicciones', [])
+        
+        if not predicciones:
+            return Paragraph("<b>Anomalías:</b> Sin predicciones disponibles", styles['Normal'])
+        
+        # Título de la sección
+        titulo_style = ParagraphStyle(
+            'TituloAnomalias',
+            parent=styles['Heading2'],
+            fontSize=14,
+            spaceAfter=12,
+            textColor=colors.HexColor('#E74C3C')
+        )
+        titulo = Paragraph("⚠️ DETECCIÓN DE ANOMALÍAS FINANCIERAS", titulo_style)
+        
+        # Crear tabla simple
+        data = [['PERIODO', 'PROBABILIDAD', 'NIVEL DE RIESGO']]  # ← CORREGIDO "RIESGO"
+        
+        for pred in predicciones[:3]:
+            probabilidad = pred.get('prob', 0) * 100
+            riesgo = pred.get('riesgo', 'BAJO').upper()
+            
+            # Color según riesgo
+            color_riesgo = colors.HexColor('#27AE60')  # Verde para BAJO
+            if riesgo == 'MEDIO':
+                color_riesgo = colors.HexColor('#F39C12')  # Naranja
+            elif riesgo == 'ALTO':
+                color_riesgo = colors.HexColor('#E74C3C')  # Rojo
+            
+            data.append([
+                pred.get('anios', 'N/A'),
+                f"{probabilidad:.1f}%",
+                riesgo
+            ])
+        
+        table = Table(data, colWidths=[1.5*inch, 1.5*inch, 1.5*inch])
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#E74C3C')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#FDEDEC')),
+            ('FONTSIZE', (0, 1), (-1, -1), 9),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#F5B7B1')),
+            ('TEXTCOLOR', (2, 1), (2, -1), colors.HexColor('#2C3E50')),
+            ('FONTNAME', (2, 1), (2, -1), 'Helvetica-Bold')
+        ]))
+        
+        # Información adicional sobre las anomalías
+        info_text = """
+        <b>Interpretación de riesgos:</b><br/>
+        • <font color="#27AE60"><b>BAJO</b></font>: Operación normal, sin anomalías significativas<br/>
+        • <font color="#F39C12"><b>MEDIO</b></font>: Posibles desviaciones que requieren monitoreo<br/>
+        • <font color="#E74C3C"><b>ALTO</b></font>: Anomalías detectadas, revisión inmediata recomendada<br/>
+        """
+        info_paragraph = Paragraph(info_text, styles['Normal'])
+        
+        from reportlab.platypus import KeepTogether
+        return KeepTogether([titulo, Spacer(1, 6), table, Spacer(1, 12), info_paragraph])
+
+    def _crear_seccion_insights(self, styles):
+        """Crea la sección de insights automáticos - DEVUELVE UN SOLO ELEMENTO"""
+        insights_data = self.report_data.get('insights', {})
+        
+        if not insights_data:
+            return Paragraph("<b>Insights IA:</b> No generados", styles['Normal'])
+        
+        # Título de la sección
+        titulo_style = ParagraphStyle(
+            'TituloInsights',
+            parent=styles['Heading2'],
+            fontSize=14,
+            spaceAfter=12,
+            textColor=colors.HexColor('#2E86C1')
+        )
+        titulo = Paragraph("💡 INSIGHTS AUTOMÁTICOS DETECTADOS", titulo_style)
+        
+        # Crear un solo párrafo con toda la información
+        resumen = insights_data.get('resumen', 'Sin resumen')
+        insights_list = insights_data.get('insights', [])
+        
+        # Estilo para el contenido
+        contenido_style = ParagraphStyle(
+            'InsightsContent',
+            parent=styles['Normal'],
+            fontSize=10,
+            textColor=colors.HexColor('#2C3E50'),
+            backColor=colors.HexColor('#EAF2F8'),
+            borderPadding=12,
+            spaceAfter=6
+        )
+        
+        # Construir contenido
+        contenido_text = f"<b>📋 Resumen ejecutivo:</b><br/>{resumen}<br/><br/>"
+        
+        if insights_list:
+            contenido_text += "<b>🔍 Insights detectados:</b><br/>"
+            for i, insight in enumerate(insights_list[:5]):  # Máximo 5 insights
+                titulo_insight = insight.get('titulo', f'Insight {i+1}')
+                descripcion = insight.get('descripcion', 'Sin descripción')
+                
+                # Icono según el número
+                icono = '✓' if i % 2 == 0 else '➤'
+                contenido_text += f"{icono} <b>{titulo_insight}:</b> {descripcion}<br/>"
+        
+        # Recomendaciones si existen
+        recomendaciones = insights_data.get('recomendaciones', [])
+        if recomendaciones:
+            contenido_text += "<br/><b>🎯 Recomendaciones:</b><br/>"
+            for rec in recomendaciones[:3]:  # Máximo 3 recomendaciones
+                contenido_text += f"• {rec}<br/>"
+        
+        contenido = Paragraph(contenido_text, contenido_style)
+        
+        from reportlab.platypus import KeepTogether
+        return KeepTogether([titulo, Spacer(1, 6), contenido])
+
     # Métodos auxiliares para interpretaciones
     def _get_estado_crecimiento(self, valor):
         if valor > 15: return "EXCELENTE"

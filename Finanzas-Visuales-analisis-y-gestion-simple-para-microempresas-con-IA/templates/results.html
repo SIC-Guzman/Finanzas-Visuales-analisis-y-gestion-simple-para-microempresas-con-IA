@@ -132,13 +132,20 @@
 
 <script>
 window.financialData = {
+    resumen: {{ resultados.get("resumen", {}) | tojson | safe }},
     resultados: {{ resultados.get("resultados", {}) | tojson | safe }},
+    resultados_ia: {{ resultados.get("resultados_ia", {}) | tojson | safe }},
+    anomalias_financieras: {{ resultados.get("anomalias_financieras", {}) | tojson | safe }},
+    insights: {{ resultados.get("insights", {}) | tojson | safe }},
     empresa: {{ empresa | default({}) | tojson | safe }},
-    filename: "{{ filename or '' }}",
-    graficos: {{ resultados.get("graficos", {}) | tojson | safe }}
+    filename: "{{ filename or '' }}"
 };
 
-console.log("📊 DATOS CARGADOS:", window.financialData);
+console.log("📊 DATOS CARGADOS - Estructura completa:");
+console.log("- resumen:", window.financialData.resumen);
+console.log("- resultados_ia:", window.financialData.resultados_ia);
+console.log("- anomalias_financieras:", window.financialData.anomalias_financieras);
+console.log("- insights:", window.financialData.insights);
 </script>
 
 
@@ -152,32 +159,65 @@ async function downloadPDF() {
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Generando PDF...';
 
+        console.log("📤 Enviando datos para PDF:", {
+            filename: "{{ filename }}",
+            tieneResultados: !!window.financialData,
+            claves: Object.keys(window.financialData)
+        });
+
+        // ✅ ENVIAR TODOS LOS DATOS, NO SOLO EL FILENAME
         const response = await fetch("/generar_pdf", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ filename: "{{ filename }}" })
+            body: JSON.stringify({ 
+                filename: "{{ filename }}",
+                resultados: window.financialData  // ← ¡ESTA LÍNEA ES CLAVE!
+            })
         });
 
-        if (!response.ok)
-            throw new Error(await response.text());
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(errorText || "Error del servidor");
+        }
 
         const blob = await response.blob();
         const url = URL.createObjectURL(blob);
 
         const a = document.createElement("a");
         a.href = url;
-        a.download = "reporte_financiero_{{ filename }}.pdf";
+        a.download = "reporte_financiero_{{ filename.replace('.xlsx', '') }}.pdf";
         a.click();
 
         URL.revokeObjectURL(url);
 
+        // Mostrar notificación de éxito
+        showAlert("✅ PDF generado exitosamente", "success");
+
     } catch (err) {
         console.error("❌ Error al generar PDF:", err);
-        alert("Error al generar PDF: " + err.message);
+        showAlert("❌ Error al generar PDF: " + err.message, "danger");
     } finally {
         btn.disabled = false;
         btn.innerHTML = original;
     }
+}
+
+// Función auxiliar para mostrar alertas
+function showAlert(message, type) {
+    const alertDiv = document.createElement("div");
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    alertDiv.style.cssText = "top: 20px; right: 20px; z-index: 9999; min-width: 300px;";
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
 }
 
 document.addEventListener("DOMContentLoaded", () => {

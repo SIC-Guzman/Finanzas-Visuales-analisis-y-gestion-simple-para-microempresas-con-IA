@@ -403,6 +403,27 @@ def generar_pdf():
         if not filename:
             return "No se especificó archivo", 400
         
+        # Obtener los resultados COMPLETOS del frontend
+        resultados_frontend = data.get('resultados')
+        if not resultados_frontend:
+            return "No se recibieron resultados del análisis", 400
+        
+        print(f"🔍 DEBUG: Resultados recibidos del frontend - Claves: {list(resultados_frontend.keys())}")
+        print("🔍 DEBUG: Estructura de resultados_frontend:")
+        print(f"   - Tipo: {type(resultados_frontend)}")
+        print(f"   - Es dict: {isinstance(resultados_frontend, dict)}")
+        
+        if isinstance(resultados_frontend, dict):
+            print(f"   - Claves: {list(resultados_frontend.keys())}")
+            # Verificar si 'resumen' existe
+            if 'resumen' in resultados_frontend:
+                print(f"   - ✅ 'resumen' encontrado: {resultados_frontend['resumen']}")
+            else:
+                print(f"   - ❌ 'resumen' NO encontrado en resultados_frontend")
+                # Buscar en otra estructura
+                if 'resultados' in resultados_frontend:
+                    print(f"   - Buscando en resultados.resultados...")
+        
         # Ruta del archivo original
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         
@@ -410,15 +431,23 @@ def generar_pdf():
             return "Archivo no encontrado", 404
         
         # Crear analizador con el archivo original
-        from utils.analizador_financiero1 import AnalizadorFinanciero
         analizador = AnalizadorFinanciero(file_path)
         
-        # Generar el reporte completo (igual que en results)
-        resultados = analizador.generar_reporte_completo()
+        # Obtener datos de la empresa
+        empresa_data = resultados_frontend.get('empresa', {})
+        if not empresa_data:
+            # Intentar obtener del analizador
+            datos_visualizacion = analizador.obtener_datos_para_visualizacion()
+            empresa_data = datos_visualizacion.get('empresa', [{}])[0] if datos_visualizacion.get('empresa') else {}
         
-        # Usar PDFReportGenerator con los resultados
-        from utils.pdf_generator import PDFReportGenerator
-        pdf_generator = PDFReportGenerator(analizador, filename, resultados.get('datos_entrada', {}).get('empresa', {}))
+        # Usar PDFReportGenerator con los resultados COMPLETOS
+        pdf_generator = PDFReportGenerator(
+            analizador, 
+            filename, 
+            empresa_data,
+            resultados_frontend  # ← ESTE ES EL CAMBIO CLAVE: Pasar resultados completos
+        )
+        
         pdf_filename = pdf_generator.generar_reporte_pdf()
         
         if pdf_filename:
