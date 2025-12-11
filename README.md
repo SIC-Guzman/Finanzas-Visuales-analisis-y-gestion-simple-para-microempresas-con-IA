@@ -202,9 +202,9 @@ Solo necesitas reemplazar los valores de ejemplo por los de tu negocio.
 
 ### Equipo del proyecto (roles técnicos)
 
-- Roberto – Desarrollador IA de insights automáticos
-- Fernando – Desarrollador de módulo de predicción de ventas y costos
-- Jaquelin – Desarrolladora de detección de anomalías financieras
+- Roberto Dávila – Desarrollador IA de insights automáticos
+- Fernando López – Desarrollador de módulo de predicción de ventas y costos
+- Jaquelin Calanche – Desarrolladora de detección de anomalías financieras
 - Angela Canel – Desarrolladora de documentación y experiencia de usuario 
-- Carlos – Integrador full-stack y refactorización del proyecto (unificación y corrección de errores)
+- Carlos Gutiérrez – Integrador full-stack y refactorización del proyecto (unificación y corrección de errores)
 
