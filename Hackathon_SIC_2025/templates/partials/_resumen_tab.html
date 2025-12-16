@@ -1,0 +1,160 @@
+<!-- Resumen Ejecutivo con Gráficos -->
+<div class="row">
+    <!-- KPI Cards -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-start border-primary border-4 shadow h-100">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <div class="text-xs fw-bold text-primary text-uppercase mb-1">
+                            Crecimiento Ventas
+                        </div>
+                        <div class="h5 mb-0 fw-bold text-gray-800">
+                            {{ "%.1f"|format(resultados.resumen.crecimiento_ventas) }}%
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-chart-line fa-2x text-primary"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-start border-success border-4 shadow h-100">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <div class="text-xs fw-bold text-success text-uppercase mb-1">
+                            ROA
+                        </div>
+                        <div class="h5 mb-0 fw-bold text-gray-800">
+                            {{ "%.1f"|format(resultados.resumen.roa) }}%
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-tachometer-alt fa-2x text-success"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-start border-info border-4 shadow h-100">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <div class="text-xs fw-bold text-info text-uppercase mb-1">
+                            Liquidez
+                        </div>
+                        <div class="h5 mb-0 fw-bold text-gray-800">
+                            {{ "%.2f"|format(resultados.resumen.liquidez) }}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-water fa-2x text-info"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-start border-warning border-4 shadow h-100">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <div class="text-xs fw-bold text-warning text-uppercase mb-1">
+                            Margen Seguridad
+                        </div>
+                        <div class="h5 mb-0 fw-bold text-gray-800">
+                            {{ "%.1f"|format(resultados.resumen.margen_seguridad) }}%
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-shield-alt fa-2x text-warning"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gráfico de Crecimiento -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>Evolución de Ventas y Utilidades
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Aquí irá el gráfico con Chart.js -->
+                <canvas id="graficoCrecimiento" width="400" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Interpretación del Resumen - VERSIÓN ULTRA SEGURA -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-lightbulb me-2"></i>Interpretación Ejecutiva
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Crecimiento de Ventas -->
+                <div class="
+                    {% if resultados.resumen.crecimiento_ventas > 15 %}alert-success
+                    {% elif resultados.resumen.crecimiento_ventas > 0 %}alert-info
+                    {% else %}alert-warning{% endif %}">
+                    <i class="fas 
+                        {% if resultados.resumen.crecimiento_ventas > 15 %}fa-rocket
+                        {% elif resultados.resumen.crecimiento_ventas > 0 %}fa-chart-line
+                        {% else %}fa-exclamation-triangle{% endif %} me-2"></i>
+                    
+                    {% if resultados.resumen.crecimiento_ventas > 15 %}
+                    <strong>Excelente crecimiento:</strong> Las ventas muestran un crecimiento sólido por encima del 15%.
+                    {% elif resultados.resumen.crecimiento_ventas > 0 %}
+                    <strong>Crecimiento positivo:</strong> Las ventas están creciendo, pero hay espacio para mejorar.
+                    {% else %}
+                    <strong>Atención:</strong> Las ventas muestran una tendencia decreciente.
+                    {% endif %}
+                    <br><small class="text-muted">Crecimiento: {{ resultados.resumen.crecimiento_ventas }}%</small>
+                </div>
+
+                <!-- ROA -->
+                <div class="
+                    {% if resultados.resumen.roa > 15 %}alert-success
+                    {% elif resultados.resumen.roa > 8 %}alert-info
+                    {% else %}alert-warning{% endif %}">
+                    <i class="fas 
+                        {% if resultados.resumen.roa > 15 %}fa-trophy
+                        {% elif resultados.resumen.roa > 8 %}fa-check-circle
+                        {% else %}fa-exclamation-circle{% endif %} me-2"></i>
+                    
+                    {% if resultados.resumen.roa > 15 %}
+                    <strong>Alta rentabilidad:</strong> El ROA indica excelente uso de los activos.
+                    {% elif resultados.resumen.roa > 8 %}
+                    <strong>Rentabilidad adecuada:</strong> El ROA se encuentra en niveles aceptables.
+                    {% else %}
+                    <strong>Oportunidad de mejora:</strong> El ROA sugiere optimizar el uso de activos.
+                    {% endif %}
+                    <br><small class="text-muted">ROA: {{ resultados.resumen.roa }}%</small>
+                </div>
+
+                <!-- Mensaje de confirmación -->
+                <div class="alert alert-secondary mt-3">
+                    <i class="fas fa-check me-2"></i>
+                    <strong>Análisis completado:</strong> Todos los indicadores han sido calculados correctamente.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
