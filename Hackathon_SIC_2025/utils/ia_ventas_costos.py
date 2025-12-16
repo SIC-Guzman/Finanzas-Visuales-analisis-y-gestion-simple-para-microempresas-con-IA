@@ -127,3 +127,78 @@ class ModeloIAVentasCostos:
         }
 
         return resultado
+    def simular_crisis_financiera(self, porcentaje_caida=0.20, anios=3):
+        """
+        Simula una crisis financiera aplicando una caída porcentual en las ventas
+        proyectadas por el modelo de Machine Learning.
+
+        Parámetros:
+            porcentaje_caida (float): Por defecto 0.20 (20% de caída en ventas)
+            anios (int): Número de años a simular
+
+        Retorna:
+            dict con:
+                - metodo_ml
+                - escenario_base
+                - escenario_crisis
+                - evaluacion_supervivencia
+        """
+
+        # 1. Predicción base usando ML
+        proyeccion_base = self.predecir_proximos_anios(anios)
+
+        ventas_base = proyeccion_base["predicciones"]["ventas"]
+        costos_base = proyeccion_base["predicciones"]["costos"]
+
+        # 2. Aplicar shock de crisis: caída del X% en ventas
+        ventas_crisis = [v * (1 - porcentaje_caida) for v in ventas_base]
+        costos_crisis = costos_base[:]  # asumimos costos constantes (escenario conservador)
+
+        # 3. Calcular utilidades en ambos escenarios
+        utilidades_base = [v - c for v, c in zip(ventas_base, costos_base)]
+        utilidades_crisis = [v - c for v, c in zip(ventas_crisis, costos_crisis)]
+
+        # 4. Métricas financieras relevantes
+        margen_promedio_crisis = np.mean([
+            (u / v) if v > 0 else -1
+            for u, v in zip(utilidades_crisis, ventas_crisis)
+        ])
+
+        # 5. Criterio de supervivencia (clasificación)
+        # Regla académica:
+        # - Si TODOS los años tienen pérdidas → NO sobrevive
+        # - Si al menos un año tiene utilidad positiva → sobrevive
+        sobrevive = any(u > 0 for u in utilidades_crisis)
+
+        # 6. Clasificación explicable (importante académicamente)
+        if sobrevive:
+            clasificacion = "El negocio sobrevive a la crisis"
+            nivel_riesgo = "Moderado" if margen_promedio_crisis < 0.10 else "Bajo"
+        else:
+            clasificacion = "El negocio NO sobrevive a la crisis"
+            nivel_riesgo = "Alto"
+
+        # 7. Resultado estructurado
+        return {
+            "metodo_ml": proyeccion_base["metodo"],
+            "parametros_crisis": {
+                "caida_ventas_%": round(porcentaje_caida * 100, 2),
+                "anios_simulados": anios
+            },
+            "escenario_base": {
+                "ventas": [round(v, 2) for v in ventas_base],
+                "costos": [round(c, 2) for c in costos_base],
+                "utilidades": [round(u, 2) for u in utilidades_base]
+            },
+            "escenario_crisis": {
+                "ventas": [round(v, 2) for v in ventas_crisis],
+                "costos": [round(c, 2) for c in costos_crisis],
+                "utilidades": [round(u, 2) for u in utilidades_crisis]
+            },
+            "evaluacion_supervivencia": {
+                "sobrevive": sobrevive,
+                "clasificacion": clasificacion,
+                "nivel_riesgo": nivel_riesgo,
+                "margen_promedio_crisis_%": round(margen_promedio_crisis * 100, 2)
+            }
+        }

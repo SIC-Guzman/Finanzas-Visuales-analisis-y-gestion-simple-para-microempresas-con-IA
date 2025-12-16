@@ -2,27 +2,40 @@
 <div class="row">
     {% set ia_resumen = resultados.get('resultados_ia', {}).get('resumen', {}) %}
     {% set ia_predicciones = resultados.get('resultados_ia', {}).get('predicciones', {}) %}
-
-    <!-- KPI Card: Crecimiento Anual Promedio -->
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-start border-primary border-4 shadow h-100">
-            <div class="card-body">
-                <div class="row align-items-center">
-                    <div class="col">
-                        <div class="text-xs fw-bold text-primary text-uppercase mb-1">
-                            Crecimiento anual promedio
-                        </div>
-                        <div class="h5 mb-0 fw-bold text-gray-800">
-                            {{ ia_resumen.get('crecimiento_anual_promedio_%', 0) | round(2) }}%
-                        </div>
+    {% set ventas_crisis = ia_predicciones.get('ventas_crisis', []) %}
+    <!-- KPI Card: Supervivencia ante Crisis -->
+<div class="col-xl-3 col-md-6 mb-4">
+    <div class="card 
+        {% if ia_resumen.get('sobrevive_crisis') == 'Sobrevive' %}
+            border-start border-success
+        {% else %}
+            border-start border-danger
+        {% endif %}
+        border-4 shadow h-100">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col">
+                    <div class="text-xs fw-bold text-uppercase mb-1">
+                        Simulación de Crisis
                     </div>
-                    <div class="col-auto">
-                        <i class="fas fa-chart-line fa-2x text-primary"></i>
+                    <div class="h5 mb-0 fw-bold text-gray-800">
+                        {{ ia_resumen.get('sobrevive_crisis', 'No evaluado') }}
                     </div>
+                </div>
+                <div class="col-auto">
+                    <i class="fas 
+                        {% if ia_resumen.get('sobrevive_crisis') == 'Sobrevive' %}
+                            fa-shield-alt text-success
+                        {% else %}
+                            fa-skull-crossbones text-danger
+                        {% endif %}
+                        fa-2x"></i>
                 </div>
             </div>
         </div>
     </div>
+</div>
+
 
     <!-- KPI Card: Último Valor Ventas -->
     <div class="col-xl-3 col-md-6 mb-4">
@@ -108,6 +121,21 @@
                                 <td>Q{{ (venta - costo) | round(2) }}</td>
                             {% endfor %}
                         </tr>
+                        <tr class="table-warning">
+                        <th>Ventas con Crisis (Q)</th>
+                            {% for v in ventas_crisis %}
+                                <td>Q{{ v | round(2) }}</td>
+                            {% endfor %}
+                        </tr>
+                        <tr class="table-danger">
+                            <th>Utilidad con Crisis (Q)</th>
+                            {% for i in range(ventas_crisis|length) %}
+                                {% set venta = ventas_crisis[i] if ventas_crisis|length > i else 0 %}
+                                {% set costo = ia_predicciones.get('costos', [])[i] if ia_predicciones.get('costos')|length > i else 0 %}
+                                <td>Q{{ (venta - costo) | round(2) }}</td>
+                            {% endfor %}
+                        </tr>
+
                     </tbody>
                 </table>
                 {% else %}
@@ -153,6 +181,28 @@
                 <p class="text-muted small">
                     Valor estimado de crecimiento anual promedio: {{ crecimiento }}%
                 </p>
+                <hr>
+
+                <p class="mb-2">
+                    <i class="fas 
+                        {% if ia_resumen.get('sobrevive_crisis') == 'Sobrevive' %}
+                            fa-check-circle text-success
+                        {% else %}
+                            fa-times-circle text-danger
+                        {% endif %}
+                        me-2"></i>
+
+                    {% if ia_resumen.get('sobrevive_crisis') == 'Sobrevive' %}
+                        Aun bajo un escenario de crisis financiera simulada, el negocio mantiene viabilidad operativa.
+                    {% else %}
+                        Bajo un escenario de crisis financiera, el negocio presenta riesgo de inviabilidad.
+                    {% endif %}
+                </p>
+
+                <p class="text-muted small">
+                    Escenario simulado: reducción aproximada del 20% en ventas proyectadas.
+                </p>
+
             </div>
         </div>
     </div>

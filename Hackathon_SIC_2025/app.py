@@ -1,4 +1,5 @@
 # ==================== 1. IMPORTS Y CONFIGURACIÓN ====================
+#Instalar scikit-learn
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, send_file
 import os
 from pathlib import Path
@@ -156,31 +157,67 @@ def process_analysis(filename):
         resultados.setdefault('resultados', {})   # sub-diccionario principal
         resultados.setdefault('graficos', {})     # datos para charts
 
-        # --- Predicción IA de ventas y costos ---
-        # --- Predicción IA de ventas y costos ---
+        # --- Predicción IA de ventas y costos + Simulación de Crisis ---
         try:
             print("🔄 Intentando obtener ventas y costos para IA...")
             ventas, costos = analizador.obtener_ventas_y_costos()
             print(f"✅ Ventas obtenidas: {ventas}")
             print(f"✅ Costos obtenidos: {costos}")
-            
-            if ventas and costos and len(ventas) > 0 and len(costos) > 0:
+
+            if ventas and costos and len(ventas) >= 2 and len(costos) >= 2:
                 modelo_ia = ModeloIAVentasCostos(ventas=ventas, costos=costos)
+
+                # 1️⃣ Predicción normal
                 resultados_ia = modelo_ia.predecir_proximos_anios(anios=3)
-                resultados['resultados_ia'] = resultados_ia
-                print(f"✅ Predicciones IA generadas: {resultados_ia}")
+
+                # Asegurar estructuras base
+                resultados_ia.setdefault("predicciones", {})
+                resultados_ia.setdefault("resumen", {})
+
+                # 2️⃣ Simulación de crisis financiera (-20% ventas)
+                simulacion = modelo_ia.simular_crisis_financiera(
+                    porcentaje_caida=0.20
+                )
+
+                print("🧪 DEBUG simulacion_crisis RAW:", simulacion)
+
+                # --- EXTRAER DATOS SEGÚN TU MODELO ---
+                ventas_crisis = simulacion.get("escenario_crisis", {}).get("ventas", [])
+                utilidades_crisis = simulacion.get("escenario_crisis", {}).get("utilidades", [])
+
+                sobrevive_bool = simulacion.get("evaluacion_supervivencia", {}).get("sobrevive", None)
+
+                if sobrevive_bool is True:
+                    sobrevive = "Sobrevive"
+                elif sobrevive_bool is False:
+                    sobrevive = "No sobrevive"
+                else:
+                    sobrevive = "No evaluado"
+
+                # --- INYECTAR EN LA ESTRUCTURA QUE EL FRONTEND ESPERA ---
+                resultados_ia["predicciones"]["ventas_crisis"] = ventas_crisis
+                resultados_ia["resumen"]["sobrevive_crisis"] = sobrevive
+                resultados_ia["resumen"]["utilidades_crisis"] = utilidades_crisis
+
+
+                # 4️⃣ Guardar resultado final
+                resultados["resultados_ia"] = resultados_ia
+
+                print("✅ Predicciones IA generadas correctamente")
+                print("🧨 DEBUG resultados_ia FINAL:", resultados_ia)
+
             else:
-                resultados['resultados_ia'] = {
-                    'error': 'Datos insuficientes para predicciones IA',
-                    'ventas_recibidas': ventas,
-                    'costos_recibidos': costos
+                resultados["resultados_ia"] = {
+                    "error": "Datos insuficientes para predicciones IA",
+                    "ventas_recibidas": ventas,
+                    "costos_recibidos": costos
                 }
                 print("⚠️ Datos insuficientes para IA")
-                
+
         except Exception as e:
-            resultados['resultados_ia'] = {
-                'error': f"No se pudieron generar predicciones de IA: {str(e)}",
-                'detalle': 'Revisar método obtener_ventas_y_costos()'
+            resultados["resultados_ia"] = {
+                "error": f"No se pudieron generar predicciones de IA: {str(e)}",
+                "detalle": "Error en ModeloIAVentasCostos o simulación de crisis"
             }
             print(f"❌ Error en IA ventas/costos: {e}")
             import traceback
