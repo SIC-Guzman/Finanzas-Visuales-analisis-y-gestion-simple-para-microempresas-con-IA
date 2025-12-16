@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+
+{% block title %}Confirmar Datos Cargados{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="fas fa-database text-primary me-2"></i>
+                Confirmar Datos Cargados
+            </h2>
+            <div>
+                <a href="{{ url_for('upload_page') }}" class="btn btn-outline-secondary me-2">
+                    <i class="fas fa-arrow-left me-1"></i>Volver
+                </a>
+                <form action="{{ url_for('process_analysis', filename=filename) }}" method="post" style="display: inline;">
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-chart-line me-1"></i>Continuar al Análisis
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Resumen General -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-primary text-white">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Resumen del Archivo
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Información del Archivo:</h6>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>Archivo:</span>
+                                <strong>{{ filename }}</strong>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>Tipo:</span>
+                                <strong>{{ datos.tipo_archivo | title if datos.tipo_archivo else 'No detectado' }}</strong>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>Empresa:</span>
+                                <strong>
+                                    {% if datos_visualizacion.empresa and datos_visualizacion.empresa|length > 0 %}
+                                        {{ datos_visualizacion.empresa[0].valor if datos_visualizacion.empresa[0].valor else 'No especificado' }}
+                                    {% else %}
+                                        No especificado
+                                    {% endif %}
+                                </strong>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Estado de Carga:</h6>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>Estado de Resultados:</span>
+                                {% if datos_visualizacion.estado_resultados and datos_visualizacion.estado_resultados|length > 0 %}
+                                <span class="badge bg-success rounded-pill">Cargado</span>
+                                {% else %}
+                                <span class="badge bg-danger rounded-pill">Faltante</span>
+                                {% endif %}
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>Balance General:</span>
+                                {% if datos_visualizacion.balance_general and datos_visualizacion.balance_general|length > 0 %}
+                                <span class="badge bg-success rounded-pill">Cargado</span>
+                                {% else %}
+                                <span class="badge bg-danger rounded-pill">Faltante</span>
+                                {% endif %}
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>Datos de Equilibrio:</span>
+                                {% if datos_visualizacion.equilibrio and datos_visualizacion.equilibrio|length > 0 %}
+                                <span class="badge bg-success rounded-pill">Cargado</span>
+                                {% else %}
+                                <span class="badge bg-danger rounded-pill">Faltante</span>
+                                {% endif %}
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Datos de la Empresa -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-info text-white">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-building me-2"></i>Datos de la Empresa
+                </h4>
+            </div>
+            <div class="card-body">
+                {% if datos_visualizacion.empresa and datos_visualizacion.empresa|length > 0 %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Concepto</th>
+                                <th>Valor</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in datos_visualizacion.empresa %}
+                            <tr>
+                                <td class="fw-bold">{{ item.concepto }}</td>
+                                <td>{{ item.valor }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    No se encontraron datos de la empresa
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Estado de Resultados -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-success text-white">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>Estado de Resultados
+                </h4>
+            </div>
+            <div class="card-body">
+                {% if datos_visualizacion.estado_resultados and datos_visualizacion.estado_resultados|length > 0 %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-sm">
+                        <thead class="table-dark">
+                            <tr>
+                                {% for key in datos_visualizacion.estado_resultados[0].keys() %}
+                                <th>{{ key }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for fila in datos_visualizacion.estado_resultados %}
+                            <tr>
+                                {% for key, valor in fila.items() %}
+                                <td>{{ valor }}</td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    No se encontraron datos del Estado de Resultados
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Balance General -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-balance-scale me-2"></i>Balance General
+                </h4>
+            </div>
+            <div class="card-body">
+                {% if datos_visualizacion.balance_general and datos_visualizacion.balance_general|length > 0 %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-sm">
+                        <thead class="table-dark">
+                            <tr>
+                                {% for key in datos_visualizacion.balance_general[0].keys() %}
+                                <th>{{ key }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for fila in datos_visualizacion.balance_general %}
+                            <tr>
+                                {% for key, valor in fila.items() %}
+                                <td>{{ valor }}</td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    No se encontraron datos del Balance General
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Datos de Equilibrio -->
+        <div class="card shadow">
+            <div class="card-header bg-danger text-white">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-calculator me-2"></i>Datos para Punto de Equilibrio
+                </h4>
+            </div>
+            <div class="card-body">
+                {% if datos_visualizacion.equilibrio and datos_visualizacion.equilibrio|length > 0 %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Concepto</th>
+                                <th>Valor</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in datos_visualizacion.equilibrio %}
+                            <tr>
+                                <td class="fw-bold">{{ item.concepto }}</td>
+                                <td>{{ item.valor }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    No se encontraron datos para el Punto de Equilibrio
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Acciones -->
+        <div class="card shadow mt-4">
+            <div class="card-body text-center py-4">
+                <h4 class="text-success mb-3">
+                    <i class="fas fa-check-circle me-2"></i>¿Los datos son correctos?
+                </h4>
+                <p class="text-muted mb-4">
+                    Verifica que toda la información se haya cargado correctamente antes de proceder al análisis.
+                </p>
+                <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                    <a href="{{ url_for('upload_page') }}" class="btn btn-outline-secondary btn-lg me-md-3">
+                        <i class="fas fa-redo me-2"></i>Subir Otro Archivo
+                    </a>
+                    <form action="{{ url_for('process_analysis', filename=filename) }}" method="post" style="display: inline;">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="fas fa-rocket me-2"></i>Continuar al Análisis
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
