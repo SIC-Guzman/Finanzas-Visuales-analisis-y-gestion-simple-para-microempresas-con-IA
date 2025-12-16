@@ -1,0 +1,222 @@
+<!-- Razones Financieras -->
+<div class="row">
+    <!-- Tarjetas de Indicadores -->
+    <div class="col-xl-4 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Liquidez Corriente
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            {{ "%.2f"|format(resultados.resultados.razones.liquidez_corriente) if resultados.resultados.razones.liquidez_corriente else 'N/A' }}
+                        </div>
+                        <div class="mt-2">
+                            {% if resultados.resultados.razones.liquidez_corriente %}
+                                {% if resultados.resultados.razones.liquidez_corriente > 2.0 %}
+                                <span class="badge bg-success">Excelente</span>
+                                {% elif resultados.resultados.razones.liquidez_corriente > 1.5 %}
+                                <span class="badge bg-info">Buena</span>
+                                {% elif resultados.resultados.razones.liquidez_corriente > 1.0 %}
+                                <span class="badge bg-warning">Adecuada</span>
+                                {% else %}
+                                <span class="badge bg-danger">Riesgo</span>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-tint fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-4 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            ROA
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            {{ "%.1f"|format(resultados.resultados.razones.roa) if resultados.resultados.razones.roa else 'N/A' }}%
+                        </div>
+                        <div class="mt-2">
+                            {% if resultados.resultados.razones.roa %}
+                                {% if resultados.resultados.razones.roa > 15 %}
+                                <span class="badge bg-success">Alto</span>
+                                {% elif resultados.resultados.razones.roa > 10 %}
+                                <span class="badge bg-info">Bueno</span>
+                                {% elif resultados.resultados.razones.roa > 5 %}
+                                <span class="badge bg-warning">Aceptable</span>
+                                {% else %}
+                                <span class="badge bg-danger">Bajo</span>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-chart-line fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-4 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            ROE
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            {{ "%.1f"|format(resultados.resultados.razones.roe) if resultados.resultados.razones.roe else 'N/A' }}%
+                        </div>
+                        <div class="mt-2">
+                            {% if resultados.resultados.razones.roe %}
+                                {% if resultados.resultados.razones.roe > 20 %}
+                                <span class="badge bg-success">Excelente</span>
+                                {% elif resultados.resultados.razones.roe > 15 %}
+                                <span class="badge bg-info">Bueno</span>
+                                {% elif resultados.resultados.razones.roe > 10 %}
+                                <span class="badge bg-warning">Aceptable</span>
+                                {% else %}
+                                <span class="badge bg-danger">Bajo</span>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-user-tie fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gráfico de Razones -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-radar-chart me-2"></i>Comparativa de Indicadores
+                </h5>
+            </div>
+            <div class="card-body">
+                <<!--Gráfico radar de indicadores financieros-->
+                <canvas id="graficoRadarRazones" width="400" height="400"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabla Detallada -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header bg-dark text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-table me-2"></i>Detalle de Razones Financieras
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Indicador</th>
+                                <th class="text-center">Valor</th>
+                                <th class="text-center">Interpretación</th>
+                                <th class="text-center">Meta Ideal</th>
+                                <th class="text-center">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if resultados.resultados.razones.liquidez_corriente %}
+                            <tr>
+                                <td class="fw-bold">Liquidez Corriente</td>
+                                <td class="text-center fw-bold">{{ "%.2f"|format(resultados.resultados.razones.liquidez_corriente) }}</td>
+                                <td class="text-center">Capacidad de pago a corto plazo</td>
+                                <td class="text-center">> 1.5</td>
+                                <td class="text-center">
+                                    {% if resultados.resultados.razones.liquidez_corriente > 1.5 %}
+                                    <span class="badge bg-success">Óptimo</span>
+                                    {% elif resultados.resultados.razones.liquidez_corriente > 1.0 %}
+                                    <span class="badge bg-warning">Aceptable</span>
+                                    {% else %}
+                                    <span class="badge bg-danger">Riesgo</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endif %}
+
+                            {% if resultados.resultados.razones.roa %}
+                            <tr>
+                                <td class="fw-bold">ROA</td>
+                                <td class="text-center fw-bold">{{ "%.1f"|format(resultados.resultados.razones.roa) }}%</td>
+                                <td class="text-center">Rentabilidad sobre activos</td>
+                                <td class="text-center">> 10%</td>
+                                <td class="text-center">
+                                    {% if resultados.resultados.razones.roa > 10 %}
+                                    <span class="badge bg-success">Excelente</span>
+                                    {% elif resultados.resultados.razones.roa > 5 %}
+                                    <span class="badge bg-warning">Aceptable</span>
+                                    {% else %}
+                                    <span class="badge bg-danger">Bajo</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endif %}
+
+                            {% if resultados.resultados.razones.roe %}
+                            <tr>
+                                <td class="fw-bold">ROE</td>
+                                <td class="text-center fw-bold">{{ "%.1f"|format(resultados.resultados.razones.roe) }}%</td>
+                                <td class="text-center">Rentabilidad sobre patrimonio</td>
+                                <td class="text-center">> 15%</td>
+                                <td class="text-center">
+                                    {% if resultados.resultados.razones.roe > 15 %}
+                                    <span class="badge bg-success">Excelente</span>
+                                    {% elif resultados.resultados.razones.roe > 10 %}
+                                    <span class="badge bg-warning">Aceptable</span>
+                                    {% else %}
+                                    <span class="badge bg-danger">Bajo</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endif %}
+
+                            {% if resultados.resultados.razones.endeudamiento %}
+                            <tr>
+                                <td class="fw-bold">Endeudamiento</td>
+                                <td class="text-center fw-bold">{{ "%.1f"|format(resultados.resultados.razones.endeudamiento) }}%</td>
+                                <td class="text-center">Nivel de apalancamiento</td>
+                                <td class="text-center">< 60%</td>
+                                <td class="text-center">
+                                    {% if resultados.resultados.razones.endeudamiento < 40 %}
+                                    <span class="badge bg-success">Bajo</span>
+                                    {% elif resultados.resultados.razones.endeudamiento < 60 %}
+                                    <span class="badge bg-info">Moderado</span>
+                                    {% elif resultados.resultados.razones.endeudamiento < 80 %}
+                                    <span class="badge bg-warning">Alto</span>
+                                    {% else %}
+                                    <span class="badge bg-danger">Muy Alto</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

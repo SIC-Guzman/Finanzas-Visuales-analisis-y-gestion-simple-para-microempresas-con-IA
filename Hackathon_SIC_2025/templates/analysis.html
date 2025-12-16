@@ -1,0 +1,464 @@
+{% extends "base.html" %}
+
+{% block title %}Análisis Demo{% endblock %}
+
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<div class="row">
+    <div class="col-12">
+        <div class="text-center mb-5">
+            <h1 class="display-4 text-primary mb-3">
+                <i class="fas fa-chart-bar me-3"></i>Análisis de Demostración
+            </h1>
+            <p class="lead text-muted">
+                Ejemplo de análisis financiero con datos de muestra
+            </p>
+        </div>
+
+        <!-- Tarjetas de Métricas Principales -->
+        <div class="row mb-5">
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-primary shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                    Crecimiento Ventas
+                                </div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">20.8%</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-rocket fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-success shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                    ROA
+                                </div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">22.0%</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-tachometer-alt fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-info shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                    Liquidez
+                                </div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">2.27</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-water fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-warning shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                    Margen Seguridad
+                                </div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">47.1%</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-shield-alt fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráfico de Demostración -->
+        <div class="row mb-5">
+            <div class="col-12">
+                <div class="card shadow">
+                    <div class="card-header bg-gradient-primary text-black">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-chart-network me-2"></i>Dashboard de Indicadores - Vista Demo
+                        </h5>
+                    </div>
+                    <div class="card-body position-relative">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <canvas id="demoChart1" height="250"></canvas>
+                            </div>
+                            <div class="col-md-6">
+                                <canvas id="demoChart2" height="250"></canvas>
+                            </div>
+                            <script>
+                                
+                                // VERSIÓN MEJORADA - Gráficos de demo completos
+                                console.log('🚀 INICIANDO GRÁFICOS DE DEMO MEJORADOS...');
+
+                                // Gráfico 1 - Evolución de ventas
+                                try {
+                                    const ctx1 = document.getElementById('demoChart1').getContext('2d');
+                                    new Chart(ctx1, {
+                                        type: 'line',
+                                        data: {
+                                            labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
+                                            datasets: [{
+                                                label: 'Ventas 2023',
+                                                data: [100, 110, 105, 120, 115, 125, 130, 135, 140, 145, 150, 160],
+                                                borderColor: 'rgba(54, 162, 235, 1)',
+                                                backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                                                tension: 0.4,
+                                                fill: true
+                                            }, {
+                                                label: 'Ventas 2024', 
+                                                data: [110, 120, 115, 130, 125, 140, 145, 150, 160, 165, 170, 180],
+                                                borderColor: 'rgba(75, 192, 192, 1)',
+                                                backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                                                tension: 0.4,
+                                                fill: true
+                                            }]
+                                        },
+                                        options: {
+                                            responsive: true,
+                                            plugins: {
+                                                title: {
+                                                    display: true,
+                                                    text: 'Evolución Mensual de Ventas (Miles Q)'
+                                                }
+                                            },
+                                            scales: {
+                                                y: {
+                                                    beginAtZero: true
+                                                }
+                                            }
+                                        }
+                                    });
+                                    console.log('✅ Gráfico 1 MEJORADO creado');
+                                } catch (error) {
+                                    console.error('❌ Error gráfico 1:', error);
+                                }
+
+                                // Gráfico 2 - Composición completa
+                                try {
+                                    const ctx2 = document.getElementById('demoChart2').getContext('2d');
+                                    new Chart(ctx2, {
+                                        type: 'doughnut',
+                                        data: {
+                                            labels: ['Costo Ventas', 'Gastos Operación', 'Gastos Financieros', 'Impuestos', 'Utilidad Neta'],
+                                            datasets: [{
+                                                data: [60, 21.4, 1.5, 2.1, 15.7],
+                                                backgroundColor: [
+                                                    'rgba(255, 99, 132, 0.8)',
+                                                    'rgba(255, 205, 86, 0.8)', 
+                                                    'rgba(54, 162, 235, 0.8)',
+                                                    'rgba(153, 102, 255, 0.8)',
+                                                    'rgba(75, 192, 192, 0.8)'
+                                                ],
+                                                borderWidth: 2,
+                                                borderColor: '#fff'
+                                            }]
+                                        },
+                                        options: {
+                                            responsive: true,
+                                            plugins: {
+                                                title: {
+                                                    display: true,
+                                                    text: 'Composición Estado de Resultados (%)'
+                                                },
+                                                tooltip: {
+                                                    callbacks: {
+                                                        label: function(context) {
+                                                            return `${context.label}: ${context.parsed}%`;
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    });
+                                    console.log('✅ Gráfico 2 MEJORADO creado');
+                                } catch (error) {
+                                    console.error('❌ Error gráfico 2:', error);
+                                }
+
+                                console.log('🎯 DEMO COMPLETA: Gráficos funcionando!');
+                                
+                            </script>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Información de la Demo -->
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card shadow">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-info-circle me-2"></i>Acerca de este Análisis
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <p>Este análisis de demostración muestra las capacidades completas del sistema usando datos de ejemplo:</p>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Datos de Entrada:</h6>
+                                <ul>
+                                    <li>Empresa: "Ejemplo S.A."</li>
+                                    <li>Ventas año actual: Q1,450,000</li>
+                                    <li>Utilidad neta: Q228,000</li>
+                                    <li>Activos totales: Q960,000</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Indicadores Calculados:</h6>
+                                <ul>
+                                    <li>Análisis horizontal y vertical</li>
+                                    <li>Razones de liquidez y rentabilidad</li>
+                                    <li>Punto de equilibrio</li>
+                                    <li>Margen de seguridad</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-warning mt-3">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Nota:</strong> Esta es una demostración con datos de ejemplo. 
+                            Para analizar tus propios datos, sube un archivo Excel o CSV.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card shadow">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-rocket me-2"></i>¿Listo para Comenzar?
+                        </h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <i class="fas fa-file-excel fa-4x text-success mb-3"></i>
+                        <h5>Analiza tus Propios Datos</h5>
+                        <p class="text-muted mb-4">
+                            Sube tu archivo financiero y obtén un análisis completo en segundos.
+                        </p>
+                        <a href="{{ url_for('upload_page') }}" class="btn btn-primary btn-lg w-100">
+                            <i class="fas fa-upload me-2"></i>Comenzar Análisis
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- SECCIÓN NUEVA: Descargar Plantillas -->
+        <div class="row mt-5">
+            <div class="col-12">
+                <div class="card shadow">
+                    <div class="card-header bg-gradient-info text-black">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-download me-2"></i>Descargar Plantillas
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="lead">¿Listo para analizar tus propios datos? Descarga nuestra plantilla y comienza:</p>
+                        
+                        <div class="row">
+                            <!-- Plantilla Excel Simple -->
+                            <div class="col-md-4 mb-4">
+                                <div class="card h-100 border-primary">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-file-excel fa-3x text-success mb-3"></i>
+                                        <h5>Excel Simple</h5>
+                                        <p class="text-muted">Todo en una hoja - Ideal para empezar</p>
+                                        <ul class="list-unstyled text-start small">
+                                            <li>✓ Formato sencillo</li>
+                                            <li>✓ Una sola hoja</li>
+                                            <li>✓ Fácil de llenar</li>
+                                        </ul>
+                                    </div>
+                                    <div class="card-footer bg-transparent">
+                                        <a href="{{ url_for('descargar_plantilla', tipo='excel_simple') }}" 
+                                           class="btn btn-success w-100">
+                                            <i class="fas fa-download me-2"></i>Descargar Excel Simple
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Plantilla Excel Avanzada -->
+                            <div class="col-md-4 mb-4">
+                                <div class="card h-100 border-info">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-file-excel fa-3x text-primary mb-3"></i>
+                                        <h5>Excel Avanzado</h5>
+                                        <p class="text-muted">Múltiples hojas - Organizado</p>
+                                        <ul class="list-unstyled text-start small">
+                                            <li>✓ Hojas separadas</li>
+                                            <li>✓ Más organizado</li>
+                                            <li>✓ Para usuarios avanzados</li>
+                                        </ul>
+                                    </div>
+                                    <div class="card-footer bg-transparent">
+                                        <a href="{{ url_for('descargar_plantilla', tipo='excel_avanzado') }}" 
+                                           class="btn btn-primary w-100">
+                                            <i class="fas fa-download me-2"></i>Descargar Excel Avanzado
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Plantilla CSV -->
+                            <div class="col-md-4 mb-4">
+                                <div class="card h-100 border-warning">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-file-csv fa-3x text-warning mb-3"></i>
+                                        <h5>Formato CSV</h5>
+                                        <p class="text-muted">Texto plano - Compatible universal</p>
+                                        <ul class="list-unstyled text-start small">
+                                            <li>✓ Encoding UTF-8</li>
+                                            <li>✓ Compatible con todo</li>
+                                            <li>✓ Sin problemas de acentos</li>
+                                        </ul>
+                                    </div>
+                                    <div class="card-footer bg-transparent">
+                                        <a href="{{ url_for('descargar_plantilla', tipo='csv') }}" 
+                                           class="btn btn-warning w-100">
+                                            <i class="fas fa-download me-2"></i>Descargar CSV
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alert-info mt-4 p-3 mb-2 bg-light-subtle text-light-emphasis">
+                            <i class="fas fa-lightbulb me-2"></i>
+                            <strong>Recomendación:</strong> Si es tu primera vez, usa el <strong>Excel Simple</strong>. 
+                            Si tienes problemas con acentos o caracteres especiales, usa el <strong>CSV</strong>.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+<script>
+// Gráficos específicos para la página de demo
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Inicializando gráficos de demo...');
+    
+    // Gráfico 1: Evolución de ventas
+    const ctx1 = document.getElementById('demoChart1');
+    if (ctx1) {
+        console.log('📊 Creando gráfico de evolución de ventas...');
+        new Chart(ctx1, {
+            type: 'line',
+            data: {
+                labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
+                datasets: [{
+                    label: 'Ventas 2023 (miles)',
+                    data: [100, 110, 105, 120, 115, 125, 130, 135, 140, 145, 150, 160],
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }, {
+                    label: 'Ventas 2024 (miles)',
+                    data: [110, 120, 115, 130, 125, 140, 145, 150, 160, 165, 170, 180],
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Evolución Mensual de Ventas'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Miles de Quetzales'
+                        }
+                    }
+                }
+            }
+        });
+        console.log('✅ Gráfico 1 creado');
+    } else {
+        console.error('❌ No se encontró demoChart1');
+    }
+
+    // Gráfico 2: Composición de gastos
+    const ctx2 = document.getElementById('demoChart2');
+    if (ctx2) {
+        console.log('📊 Creando gráfico de composición...');
+        new Chart(ctx2, {
+            type: 'doughnut',
+            data: {
+                labels: ['Costo Ventas', 'Gastos Operación', 'Gastos Financieros', 'Impuestos', 'Utilidad'],
+                datasets: [{
+                    data: [60, 21.4, 1.5, 2.1, 15.7],
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.8)',
+                        'rgba(255, 205, 86, 0.8)',
+                        'rgba(54, 162, 235, 0.8)',
+                        'rgba(153, 102, 255, 0.8)',
+                        'rgba(75, 192, 192, 0.8)'
+                    ],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Composición de Gastos y Utilidades (%)'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.label}: ${context.parsed}%`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        console.log('✅ Gráfico 2 creado');
+    } else {
+        console.error('❌ No se encontró demoChart2');
+    }
+    
+    console.log('🎯 Todos los gráficos de demo inicializados');
+});
+</script>

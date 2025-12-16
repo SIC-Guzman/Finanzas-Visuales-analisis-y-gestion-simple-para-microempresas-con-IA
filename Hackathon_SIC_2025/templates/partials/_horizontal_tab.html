@@ -1,0 +1,107 @@
+<!-- Análisis Horizontal -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-arrows-alt-h me-2"></i>Variaciones Interanuales
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if resultados.resultados.horizontal %}
+                <!-- Gráfico de Barras Horizontal -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <canvas id="graficoHorizontal" width="400" height="400"></canvas>
+                    </div>
+                </div>
+
+                <!-- Tabla de Datos -->
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Concepto</th>
+                                <th class="text-end">Año Anterior</th>
+                                <th class="text-end">Año Actual</th>
+                                <th class="text-end">Variación Q</th>
+                                <th class="text-end">Variación %</th>
+                                <th class="text-center">Tendencia</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for concepto, datos in resultados.resultados.horizontal.items() %}
+                            {% if concepto != 'utilidad_neta' %}
+                            <tr>
+                                <td class="fw-bold">{{ concepto }}</td>
+                                <td class="text-end">Q{{ "{:,.2f}".format(datos.año_anterior) }}</td>
+                                <td class="text-end">Q{{ "{:,.2f}".format(datos.año_actual) }}</td>
+                                <td class="text-end">{{ "{:,.2f}".format(datos.variacion_absoluta) }}</td>
+                                <td class="text-end {% if datos.variacion_porcentual > 0 %}text-success{% else %}text-danger{% endif %} fw-bold">
+                                    {{ "{:+.1f}".format(datos.variacion_porcentual) }}%
+                                </td>
+                                <td class="text-center">
+                                    {% if datos.variacion_porcentual > 0 %}
+                                    <i class="fas fa-arrow-up text-success" title="Crecimiento positivo"></i>
+                                    {% elif datos.variacion_porcentual < 0 %}
+                                    <i class="fas fa-arrow-down text-danger" title="Decrecimiento"></i>
+                                    {% else %}
+                                    <i class="fas fa-minus text-secondary" title="Sin cambio"></i>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Interpretación -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="card border-0 bg-light">
+                            <div class="card-body">
+                                <h6 class="card-title text-primary">
+                                    <i class="fas fa-analytics me-2"></i>Interpretación del Análisis Horizontal
+                                </h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <ul class="list-unstyled">
+                                            {% for concepto, datos in resultados.resultados.horizontal.items() %}
+                                            {% if concepto != 'utilidad_neta' and datos.variacion_porcentual > 20 %}
+                                            <li class="mb-2">
+                                                <i class="fas fa-check-circle text-success me-2"></i>
+                                                <strong>{{ concepto }}:</strong> Fuerte crecimiento ({{ "{:+.1f}".format(datos.variacion_porcentual) }}%)
+                                            </li>
+                                            {% endif %}
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <ul class="list-unstyled">
+                                            {% for concepto, datos in resultados.resultados.horizontal.items() %}
+                                            {% if concepto != 'utilidad_neta' and datos.variacion_porcentual < 0 %}
+                                            <li class="mb-2">
+                                                <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                                                <strong>{{ concepto }}:</strong> Decrecimiento ({{ "{:+.1f}".format(datos.variacion_porcentual) }}%)
+                                            </li>
+                                            {% endif %}
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">No hay datos disponibles para el análisis horizontal</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>

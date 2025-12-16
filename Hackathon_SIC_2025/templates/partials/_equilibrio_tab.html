@@ -1,0 +1,165 @@
+<!-- Punto de Equilibrio -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-crosshairs me-2"></i>Punto de Equilibrio
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if resultados.resultados.punto_equilibrio %}
+                <div class="row text-center">
+                    <div class="col-6 mb-3">
+                        <div class="card border-primary">
+                            <div class="card-body">
+                                <h4 class="text-primary">{{ "%.0f"|format(resultados.resultados.punto_equilibrio.punto_equilibrio_unidades) }}</h4>
+                                <small class="text-muted">Unidades</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="card border-success">
+                            <div class="card-body">
+                                <h4 class="text-success">Q{{ "%.2f"|format(resultados.resultados.punto_equilibrio.punto_equilibrio_dolares) }}</h4>
+                                <small class="text-muted">En Quetzales</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <h6>Datos de Cálculo:</h6>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Precio de Venta Unitario:</span>
+                            <strong>Q{{ "%.2f"|format(resultados.resultados.punto_equilibrio.precio_venta) if resultados.resultados.punto_equilibrio.precio_venta else 'N/A' }}</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Costo Variable Unitario:</span>
+                            <strong>Q{{ "%.2f"|format(resultados.resultados.punto_equilibrio.costo_variable) if resultados.resultados.punto_equilibrio.costo_variable else 'N/A' }}</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Margen de Contribución:</span>
+                            <strong>Q{{ "%.2f"|format(resultados.resultados.punto_equilibrio.margen_contribucion) }}</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Costos Fijos Mensuales:</span>
+                            <strong>Q{{ "%.2f"|format(resultados.resultados.punto_equilibrio.costos_fijos) if resultados.resultados.punto_equilibrio.costos_fijos else 'N/A' }}</strong>
+                        </li>
+                    </ul>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-calculator fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">No hay datos disponibles para el punto de equilibrio</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-shield-alt me-2"></i>Margen de Seguridad
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if resultados.resultados.punto_equilibrio %}
+                <div class="text-center mb-4">
+                    <div class="display-4 fw-bold 
+                        {% if resultados.resultados.punto_equilibrio.margen_seguridad_porcentaje > 20 %}text-success
+                        {% elif resultados.resultados.punto_equilibrio.margen_seguridad_porcentaje > 10 %}text-info
+                        {% elif resultados.resultados.punto_equilibrio.margen_seguridad_porcentaje > 0 %}text-warning
+                        {% else %}text-danger{% endif %}">
+                        {{ "%.1f"|format(resultados.resultados.punto_equilibrio.margen_seguridad_porcentaje) }}%
+                    </div>
+                    <p class="text-muted">Margen de Seguridad Actual</p>
+                </div>
+
+                <!-- PROGRESS BAR CORREGIDO -->
+                <!-- PROGRESS BAR CORREGIDO - SOLUCIÓN 2 -->
+                <div class="progress mb-3" style="height: 25px;">
+                    {% set margen_seg = resultados.resultados.punto_equilibrio.margen_seguridad_porcentaje %}
+                    {% set progress_class = 'bg-success' if margen_seg > 20 else 'bg-info' if margen_seg > 10 else 'bg-warning' if margen_seg > 0 else 'bg-danger' %}
+                    {% set progress_width = [margen_seg, 100] | min %}
+                    
+                    <div class="progress-bar {{ progress_class }}" data-width="{{ progress_width }}">
+                        <strong>{{ "%.1f"|format(margen_seg) }}%</strong>
+                    </div>
+                </div>
+
+                <div class="alert 
+                    {% if resultados.resultados.punto_equilibrio.margen_seguridad_porcentaje > 20 %}alert-success
+                    {% elif resultados.resultados.punto_equilibrio.margen_seguridad_porcentaje > 10 %}alert-info
+                    {% elif resultados.resultados.punto_equilibrio.margen_seguridad_porcentaje > 0 %}alert-warning
+                    {% else %}alert-danger{% endif %}">
+                    <i class="fas 
+                        {% if resultados.resultados.punto_equilibrio.margen_seguridad_porcentaje > 20 %}fa-thumbs-up
+                        {% elif resultados.resultados.punto_equilibrio.margen_seguridad_porcentaje > 10 %}fa-check-circle
+                        {% elif resultados.resultados.punto_equilibrio.margen_seguridad_porcentaje > 0 %}fa-exclamation-triangle
+                        {% else %}fa-exclamation-circle{% endif %} me-2"></i>
+                    
+                    {% if resultados.resultados.punto_equilibrio.margen_seguridad_porcentaje > 20 %}
+                    <strong>Excelente margen de seguridad:</strong> La empresa opera con amplio colchón sobre el punto de equilibrio.
+                    {% elif resultados.resultados.punto_equilibrio.margen_seguridad_porcentaje > 10 %}
+                    <strong>Buen margen de seguridad:</strong> Posición cómoda por encima del punto de equilibrio.
+                    {% elif resultados.resultados.punto_equilibrio.margen_seguridad_porcentaje > 0 %}
+                    <strong>Margen ajustado:</strong> Operando cerca del punto de equilibrio, requiere atención.
+                    {% else %}
+                    <strong>Alerta:</strong> La empresa opera por debajo del punto de equilibrio.
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gráfico de Punto de Equilibrio -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header bg-danger text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-line me-2"></i>Análisis Gráfico del Punto de Equilibrio
+                </h5>
+            </div>
+            <div class="card-body">
+                <!--Gráfico de punto de equilibrio se cargará aquí-->
+                <canvas id="graficoPuntoEquilibrio" width="400" height="400"></canvas>
+                
+                {% if resultados.resultados.punto_equilibrio %}
+                <div class="row mt-3 text-center">
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6>Ventas Actuales</h6>
+                                <strong class="text-primary">Q{{ "%.2f"|format(resultados.resultados.punto_equilibrio.ventas_actuales) if resultados.resultados.punto_equilibrio.ventas_actuales else 'N/A' }}</strong>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6>Punto de Equilibrio</h6>
+                                <strong class="text-warning">Q{{ "%.2f"|format(resultados.resultados.punto_equilibrio.punto_equilibrio_dolares) }}</strong>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6>Margen Absoluto</h6>
+                                <strong class="text-success">Q{{ "%.2f"|format(resultados.resultados.punto_equilibrio.margen_seguridad) }}</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
