@@ -1,11 +1,17 @@
 # ==================== 1. IMPORTS Y CONFIGURACIÓN ====================
+#Instalar scikit-learn
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, send_file
 import os
 from pathlib import Path
+import pandas as pd
 from werkzeug.utils import secure_filename
+from utils.ia_ventas_costos import ModeloIAVentasCostos
+from utils.ia_anomalias_financieras import ModeloAnomaliasFinancieras
 from utils.analizador_financiero1 import AnalizadorFinanciero
 from flask import send_file
 from utils.pdf_generator import PDFReportGenerator 
+from utils.generador_insights import GeneradorInsights
+from types import SimpleNamespace
 
 # ==================== 2. CONFIGURACIÓN DE FLASK ====================
 app = Flask(__name__)
@@ -124,24 +130,291 @@ def confirm_data(filename):
         traceback.print_exc()
         return redirect(url_for('upload_page'))
 
+
 @app.route('/process-analysis/<filename>', methods=['POST'])
 def process_analysis(filename):
-    """Procesa el análisis completo después de confirmar datos"""
+    """Procesa el análisis completo después de confirmar datos y agrega predicciones de IA"""
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    
+
     try:
+        # --- Inicializar analizador financiero ---
         analizador = AnalizadorFinanciero(filepath)
         resultados = analizador.generar_reporte_completo()
+
+        # --- Debug: mostrar lo que trae resultados ---
+        print("🔎 DEBUG: Tipo de 'resultados':", type(resultados))
+        try:
+            print("🔎 DEBUG: Claves en resultados:", list(resultados.keys()) if isinstance(resultados, dict) else "no es dict")
+        except Exception:
+            print("🔎 DEBUG: no se pudo listar claves de resultados")
+
+        # --- Asegurar que 'resultados' es un dict ---
+        if not isinstance(resultados, dict):
+            resultados = {}
+
+        # --- Inicializar campos obligatorios para el template ---
+        resultados.setdefault('resumen', {})      # si falta, crear vacío
+        resultados.setdefault('resultados', {})   # sub-diccionario principal
+        resultados.setdefault('graficos', {})     # datos para charts
+
+        # --- Predicción IA de ventas y costos + Simulación de Crisis ---
+        try:
+            print("🔄 Intentando obtener ventas y costos para IA...")
+            ventas, costos = analizador.obtener_ventas_y_costos()
+            print(f"✅ Ventas obtenidas: {ventas}")
+            print(f"✅ Costos obtenidos: {costos}")
+
+            if ventas and costos and len(ventas) >= 2 and len(costos) >= 2:
+                modelo_ia = ModeloIAVentasCostos(ventas=ventas, costos=costos)
+
+                # 1️⃣ Predicción normal
+                resultados_ia = modelo_ia.predecir_proximos_anios(anios=3)
+
+                # Asegurar estructuras base
+                resultados_ia.setdefault("predicciones", {})
+                resultados_ia.setdefault("resumen", {})
+
+                # 2️⃣ Simulación de crisis financiera (-20% ventas)
+                simulacion = modelo_ia.simular_crisis_financiera(
+                    porcentaje_caida=0.20
+                )
+
+                print("🧪 DEBUG simulacion_crisis RAW:", simulacion)
+
+                # --- EXTRAER DATOS SEGÚN TU MODELO ---
+                ventas_crisis = simulacion.get("escenario_crisis", {}).get("ventas", [])
+                utilidades_crisis = simulacion.get("escenario_crisis", {}).get("utilidades", [])
+
+                sobrevive_bool = simulacion.get("evaluacion_supervivencia", {}).get("sobrevive", None)
+
+                if sobrevive_bool is True:
+                    sobrevive = "Sobrevive"
+                elif sobrevive_bool is False:
+                    sobrevive = "No sobrevive"
+                else:
+                    sobrevive = "No evaluado"
+
+                # --- INYECTAR EN LA ESTRUCTURA QUE EL FRONTEND ESPERA ---
+                resultados_ia["predicciones"]["ventas_crisis"] = ventas_crisis
+                resultados_ia["resumen"]["sobrevive_crisis"] = sobrevive
+                resultados_ia["resumen"]["utilidades_crisis"] = utilidades_crisis
+
+
+                # 4️⃣ Guardar resultado final
+                resultados["resultados_ia"] = resultados_ia
+
+                print("✅ Predicciones IA generadas correctamente")
+                print("🧨 DEBUG resultados_ia FINAL:", resultados_ia)
+
+            else:
+                resultados["resultados_ia"] = {
+                    "error": "Datos insuficientes para predicciones IA",
+                    "ventas_recibidas": ventas,
+                    "costos_recibidos": costos
+                }
+                print("⚠️ Datos insuficientes para IA")
+
+        except Exception as e:
+            resultados["resultados_ia"] = {
+                "error": f"No se pudieron generar predicciones de IA: {str(e)}",
+                "detalle": "Error en ModeloIAVentasCostos o simulación de crisis"
+            }
+            print(f"❌ Error en IA ventas/costos: {e}")
+            import traceback
+            traceback.print_exc()
+
+        # --- Anomalías financieras ---
+        # --- Anomalías financieras ---
+        try:
+            print("🔄 Intentando detectar anomalías...")
+            totales = analizador._calcular_totales()
+            print(f"✅ Totales calculados: {totales}")
+            
+            if totales and totales.get("total_ingresos_actual") is not None:
+                model_anom = ModeloAnomaliasFinancieras(totales, contamination=0.12)
+                det = model_anom.entrenar_y_detectar()
+                pred = model_anom.predecir_futuro_y_evaluar(anios=3)
+
+                detalles = [{
+                    "anios": "Actual",
+                    "ventas": totales.get("total_ingresos_actual", 0),
+                    "tipo": det.get("estado_final", "DESCONOCIDO"),
+                    "estado_ia": det.get("estado_ia", "DESCONOCIDO"),
+                    "score_ia": det.get("score_ia", 0)
+                }]
+
+                predicciones = []
+                for p in pred:
+                    predicciones.append({
+                        "anios": f"Año +{p.get('anios_offset', 0)}",
+                        "predicciones": p.get("predicciones", {}),
+                        "prob": p.get("prob_anomalia", 0),
+                        "riesgo": p.get("riesgo", "BAJO")
+                    })
+
+                resultados["anomalias_financieras"] = {
+                    "detalles": detalles,
+                    "predicciones": predicciones,
+                    "raw": {"det": det, "pred": pred}
+                }
+                print(f"✅ Anomalías generadas: {len(predicciones)} predicciones")
+            else:
+                resultados["anomalias_financieras"] = {
+                    "error": "Faltan datos para análisis de anomalías",
+                    "totales_obtenidos": totales
+                }
+                print("⚠️ Totales insuficientes para anomalías")
+
+        except Exception as e:
+            resultados["anomalias_financieras"] = {
+                "error": f"Error en Anomalias Financieras: {str(e)}"
+            }
+            print(f"❌ Error en anomalias: {e}")
+            import traceback
+            traceback.print_exc()
+
+        # --- Generador de insights ---
+        try:
+            print("🔄 Iniciando generador de insights...")
+            
+            # 1. Obtener datos correctamente
+            totales = analizador._calcular_totales() if hasattr(analizador, '_calcular_totales') else {}
+            
+            # 2. Obtener los resultados financieros (ya calculados)
+            resultados_financieros = resultados.get('resultados', {})
+            
+            print(f"🔍 DEBUG - Estructura de resultados_financieros:")
+            print(f"   - Claves: {list(resultados_financieros.keys())}")
+            
+            # 3. Asegurar que resultados_ia sea una lista
+            resultados_ia = resultados.get('resultados_ia', [])
+            if isinstance(resultados_ia, dict) and 'error' in resultados_ia:
+                resultados_ia = []  # Si hay error, usar lista vacía
+            
+            # 4. VERIFICAR DATOS ANTES DE CREAR GENERADOR
+            print(f"🔍 DEBUG - Datos para GeneradorInsights:")
+            print(f"   - totales: {type(totales)}, keys: {list(totales.keys())[:3] if totales else 'vacío'}")
+            print(f"   - razones: {type(resultados_financieros.get('razones', {}))}")
+            print(f"   - horizontal: {type(resultados_financieros.get('horizontal', {}))}")
+            print(f"   - vertical: {type(resultados_financieros.get('vertical', {}))}")
+            print(f"   - predicciones: {type(resultados_ia)}")
+            print(f"   - anomalias: {type(resultados.get('anomalias_financieras', {}))}")
+            
+            # 4. Crear generador con datos validados
+            gen = GeneradorInsights(
+                totales=totales,
+                razones=resultados_financieros.get('razones', {}),
+                horizontal=resultados_financieros.get('horizontal', {}),
+                vertical=resultados_financieros.get('vertical', {}),
+                predicciones=resultados_ia,
+                anomalias=resultados.get('anomalias_financieras', {})
+            )
+            
+            # 5. Generar insights
+            insights_obj = gen.generar_insights()
+            
+            print(f"✅ Insights generados - Tipo: {type(insights_obj)}")
+            print(f"✅ Insights generados - Contenido: {insights_obj}")
+            
+            # 6. Asegurar estructura correcta
+            if isinstance(insights_obj, dict):
+                resultados['insights'] = insights_obj
+                print(f"✅ Insights agregados a resultados como dict")
+                print(f"   - Claves: {list(insights_obj.keys())}")
+                if 'insights' in insights_obj:
+                    print(f"   - Número de insights: {len(insights_obj.get('insights', []))}")
+            else:
+                print(f"⚠️ Insights no eran dict, se convierten")
+                resultados['insights'] = {
+                    "resumen": "Insights generados correctamente",
+                    "insights": insights_obj if isinstance(insights_obj, list) else [],
+                    "recomendaciones": []
+                }
+            
+        except Exception as e:
+            print(f"❌ ERROR en generador de insights: {e}")
+            import traceback
+            traceback.print_exc()
+            
+            # Estructura mínima para evitar errores en la plantilla
+            resultados['insights'] = {
+                "resumen": "Error al generar insights automáticos",
+                "insights": [],
+                "recomendaciones": []
+            }
+            print(f"🔧 Se estableció estructura mínima de insights")
+
+
+         # Asegurar que todas las claves necesarias existan
+        resultados.setdefault('resumen', {})
+        resultados.setdefault('insights', {})
+        resultados.setdefault('resultados', {})
+        resultados.setdefault('graficos', {})
+        resultados.setdefault('datos_entrada', {})
+
+        # Convertir None a dict vacío si es necesario
+        if resultados['resumen'] is None:
+            resultados['resumen'] = {}
+        if resultados['insights'] is None:
+            resultados['insights'] = {}
+
+        print("✅ DEBUG - Estructura final:")
+        print(f"   - resumen keys: {list(resultados.get('resumen', {}).keys())}")
+        print(f"   - resumen contenido: {resultados.get('resumen', {})}")
+        print(f"   - insights keys: {list(resultados.get('insights', {}).keys())}")
         
-        if resultados:
-            return render_template('results.html', 
-                                resultados=resultados,
-                                filename=filename,
-                                empresa=resultados.get('datos_entrada', {}).get('empresa', {}))
-        else:
-            flash('Error generando análisis completo', 'error')
-            return redirect(url_for('upload_page'))
+        # Debug adicional - ¡SIN intentar acceder con punto!
+        print("🔍 DEBUG - Verificando estructura...")
+        print(f"   - Acceso seguro con get: {resultados.get('resumen')}")
+        print(f"   - Tipo de resultados: {type(resultados)}")
+        print(f"   - ¿Es dict?: {isinstance(resultados, dict)}")
+
+        # --- Renderizar plantilla ---
+        print("🔎 DEBUG: Antes de renderizar, claves en resultados:", list(resultados.keys()))
+        # Verificación EXTRA de seguridad
+        print("🛡️ VERIFICACIÓN EXTRA:")
+        print(f"   - ¿resultados tiene 'resumen'?: {'resumen' in resultados}")
+        print(f"   - ¿resultados.resumen existe? (NO usar): Vamos a intentar...")
+
+        # NO HAGAS esto en producción, solo para debug:
+        try:
+            # Esto fallará si resultados no es DotDict
+            temp = resultados.resumen
+            print(f"   - ¡SORPRESA! resultados.resumen funciona: {temp}")
+        except AttributeError:
+            print(f"   - Bien, resultados.resumen NO funciona (como esperábamos)")
+            
+        print(f"   - Acceso correcto: resultados['resumen']: {resultados['resumen']}")
+        # JUSTO ANTES del return, reemplaza resultados con un dict nuevo
+        resultados_final = dict(resultados)  # Crea una copia limpia
+
+        print("🆕 Dict final creado:")
+        print(f"   - Tipo: {type(resultados_final)}")
+        print(f"   - Claves: {list(resultados_final.keys())}")
+
+        try:
+    # Intentar renderizar normalmente
+            return render_template(
+                'results.html',
+                resultados=resultados_final,
+                filename=filename,
+                empresa=resultados_final.get('datos_entrada', {}).get('empresa', {})
+            )
+        except Exception as e:
+            # Capturar CUALQUIER error durante el renderizado
+            print(f"🚨 ERROR CRÍTICO EN RENDER_TEMPLATE: {str(e)}")
+            print(f"🚨 Traceback completo:")
+            import traceback
+            traceback.print_exc()
+            
+            # Renderizar una página de error específica
+            flash(f'Error al mostrar resultados: {str(e)}', 'error')
+            return render_template('error_render.html', 
+                                error=str(e),
+                                datos_estructura=resultados_final.keys())
+
     except Exception as e:
+        print("❌ ERROR en process_analysis:", e)
         flash(f'Error en análisis: {str(e)}', 'error')
         return redirect(url_for('upload_page'))
 
@@ -167,6 +440,27 @@ def generar_pdf():
         if not filename:
             return "No se especificó archivo", 400
         
+        # Obtener los resultados COMPLETOS del frontend
+        resultados_frontend = data.get('resultados')
+        if not resultados_frontend:
+            return "No se recibieron resultados del análisis", 400
+        
+        print(f"🔍 DEBUG: Resultados recibidos del frontend - Claves: {list(resultados_frontend.keys())}")
+        print("🔍 DEBUG: Estructura de resultados_frontend:")
+        print(f"   - Tipo: {type(resultados_frontend)}")
+        print(f"   - Es dict: {isinstance(resultados_frontend, dict)}")
+        
+        if isinstance(resultados_frontend, dict):
+            print(f"   - Claves: {list(resultados_frontend.keys())}")
+            # Verificar si 'resumen' existe
+            if 'resumen' in resultados_frontend:
+                print(f"   - ✅ 'resumen' encontrado: {resultados_frontend['resumen']}")
+            else:
+                print(f"   - ❌ 'resumen' NO encontrado en resultados_frontend")
+                # Buscar en otra estructura
+                if 'resultados' in resultados_frontend:
+                    print(f"   - Buscando en resultados.resultados...")
+        
         # Ruta del archivo original
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         
@@ -174,15 +468,23 @@ def generar_pdf():
             return "Archivo no encontrado", 404
         
         # Crear analizador con el archivo original
-        from utils.analizador_financiero1 import AnalizadorFinanciero
         analizador = AnalizadorFinanciero(file_path)
         
-        # Generar el reporte completo (igual que en results)
-        resultados = analizador.generar_reporte_completo()
+        # Obtener datos de la empresa
+        empresa_data = resultados_frontend.get('empresa', {})
+        if not empresa_data:
+            # Intentar obtener del analizador
+            datos_visualizacion = analizador.obtener_datos_para_visualizacion()
+            empresa_data = datos_visualizacion.get('empresa', [{}])[0] if datos_visualizacion.get('empresa') else {}
         
-        # Usar PDFReportGenerator con los resultados
-        from utils.pdf_generator import PDFReportGenerator
-        pdf_generator = PDFReportGenerator(analizador, filename, resultados.get('datos_entrada', {}).get('empresa', {}))
+        # Usar PDFReportGenerator con los resultados COMPLETOS
+        pdf_generator = PDFReportGenerator(
+            analizador, 
+            filename, 
+            empresa_data,
+            resultados_frontend  # ← ESTE ES EL CAMBIO CLAVE: Pasar resultados completos
+        )
+        
         pdf_filename = pdf_generator.generar_reporte_pdf()
         
         if pdf_filename:
@@ -221,13 +523,13 @@ def descargar_plantilla(tipo):
     try:
         if tipo == 'excel_simple':
             return send_file(
-                'plantillas/Indicadores_Financieros_Basicos_Calculados.xlsx',
+                'plantillas/Plantilla_Financiera_Simple.xlsx',
                 as_attachment=True,
                 download_name='Plantilla_Financiera_Simple.xlsx'
             )
         elif tipo == 'excel_avanzado':
             return send_file(
-                'plantillas/Indicadores_Financieros_Basicos_Calculados_v3.xlsx',
+                'plantillas/Plantilla_Financiera_Avanzada.xlsx',
                 as_attachment=True,
                 download_name='Plantilla_Financiera_Avanzada.xlsx'
             )
