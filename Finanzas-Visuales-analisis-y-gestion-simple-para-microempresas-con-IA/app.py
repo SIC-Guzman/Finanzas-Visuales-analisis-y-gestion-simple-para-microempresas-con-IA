@@ -12,7 +12,7 @@ from flask import send_file
 from utils.pdf_generator import PDFReportGenerator 
 from utils.generador_insights import GeneradorInsights
 from types import SimpleNamespace
-
+from utils.semaforo_financiero import SemaforoFinanciero
 # ==================== 2. CONFIGURACIÓN DE FLASK ====================
 app = Flask(__name__)
 app.secret_key = 'analizador_financiero_2024'
@@ -417,6 +417,25 @@ def process_analysis(filename):
         flash(f'Error en análisis: {str(e)}', 'error')
         return redirect(url_for('upload_page'))
 
+@app.route('/semaforo_financiero/<filename>')
+def semaforo_financiero(filename):
+    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    analizador = AnalizadorFinanciero(filepath)
+
+    resultados = analizador.generar_reporte_completo()
+
+    razones = resultados.get("resultados", {}).get("razones", {})
+    resultados_ia = resultados.get("resultados_ia", {})
+    anomalias = resultados.get("anomalias_financieras", {})
+
+    semaforo = SemaforoFinanciero(
+        razones=razones,
+        resultados_ia=resultados_ia,
+        anomalias=anomalias
+    )
+
+    return jsonify(semaforo.generar_semaforo())
+
 @app.route('/analysis')
 def analysis_demo():
     """Página de ejemplo con análisis de demostración"""
@@ -432,7 +451,6 @@ def generar_pdf():
             return "Se esperaba JSON", 400
             
         data = request.get_json()
-        print("🔍 DEBUG: Datos recibidos para PDF")
         
         # Obtener el filename para cargar el archivo original
         filename = data.get('filename')
@@ -443,22 +461,6 @@ def generar_pdf():
         resultados_frontend = data.get('resultados')
         if not resultados_frontend:
             return "No se recibieron resultados del análisis", 400
-        
-        print(f"🔍 DEBUG: Resultados recibidos del frontend - Claves: {list(resultados_frontend.keys())}")
-        print("🔍 DEBUG: Estructura de resultados_frontend:")
-        print(f"   - Tipo: {type(resultados_frontend)}")
-        print(f"   - Es dict: {isinstance(resultados_frontend, dict)}")
-        
-        if isinstance(resultados_frontend, dict):
-            print(f"   - Claves: {list(resultados_frontend.keys())}")
-            # Verificar si 'resumen' existe
-            if 'resumen' in resultados_frontend:
-                print(f"   - ✅ 'resumen' encontrado: {resultados_frontend['resumen']}")
-            else:
-                print(f"   - ❌ 'resumen' NO encontrado en resultados_frontend")
-                # Buscar en otra estructura
-                if 'resultados' in resultados_frontend:
-                    print(f"   - Buscando en resultados.resultados...")
         
         # Ruta del archivo original
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
@@ -472,16 +474,44 @@ def generar_pdf():
         # Obtener datos de la empresa
         empresa_data = resultados_frontend.get('empresa', {})
         if not empresa_data:
-            # Intentar obtener del analizador
             datos_visualizacion = analizador.obtener_datos_para_visualizacion()
             empresa_data = datos_visualizacion.get('empresa', [{}])[0] if datos_visualizacion.get('empresa') else {}
+        
+        # AÑADIR: Generar semáforo financiero si no está en los resultados
+        if 'semaforo_financiero' not in resultados_frontend:
+            try:
+                # Generar semáforo financiero
+                razones = resultados_frontend.get('resultados', {}).get('razones', {})
+                resultados_ia = resultados_frontend.get('resultados_ia', {})
+                anomalias = resultados_frontend.get('anomalias_financieras', {})
+                
+                semaforo_obj = SemaforoFinanciero(
+                    razones=razones,
+                    resultados_ia=resultados_ia,
+                    anomalias=anomalias
+                )
+                
+                resultados_frontend['semaforo_financiero'] = semaforo_obj.generar_semaforo()
+                print("✅ Semáforo financiero generado para PDF")
+            except Exception as e:
+                print(f"⚠️ Error generando semáforo para PDF: {e}")
+                resultados_frontend['semaforo_financiero'] = {}
+        
+        # Asegurar que existe la clave simulador_crisis
+        if 'resultados_ia' in resultados_frontend:
+            resultados_ia = resultados_frontend['resultados_ia']
+            if 'resumen' in resultados_ia and 'sobrevive_crisis' in resultados_ia['resumen']:
+                resultados_frontend['simulador_crisis'] = {
+                    'sobrevive_crisis': resultados_ia['resumen']['sobrevive_crisis'],
+                    'utilidades_crisis': resultados_ia['resumen'].get('utilidades_crisis', [])
+                }
         
         # Usar PDFReportGenerator con los resultados COMPLETOS
         pdf_generator = PDFReportGenerator(
             analizador, 
             filename, 
             empresa_data,
-            resultados_frontend  # ← ESTE ES EL CAMBIO CLAVE: Pasar resultados completos
+            resultados_frontend  # ← Ahora incluye semáforo y simulador
         )
         
         pdf_filename = pdf_generator.generar_reporte_pdf()
