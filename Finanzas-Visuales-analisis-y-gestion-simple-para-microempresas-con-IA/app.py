@@ -224,7 +224,6 @@ def process_analysis(filename):
             traceback.print_exc()
 
         # --- Anomalías financieras ---
-        # --- Anomalías financieras ---
         try:
             print("🔄 Intentando detectar anomalías...")
             totales = analizador._calcular_totales()
