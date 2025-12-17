@@ -1,7 +1,6 @@
 ## Analizador Financiero Inteligente para Microempresas (AFIME) 
 ## Finanzas-Visuales-analisis-y-gestion-simple-para-microempresas-con-IA
-
-GRUPO 4
+## Hackathon SIC 2025
 
 > Analiza tu empresa de forma inteligente usando métricas financieras, Machine Learning y una interfaz web sencilla.  
 > Pensado para emprendedores y microempresas que no son expertos en contabilidad, pero necesitan entender sus números.
@@ -88,6 +87,36 @@ Y genera insights en lenguaje natural, por ejemplo:
 - “Costos operativos crecieron más rápido que tus ventas.”  
 - “Liquidez actual es saludable, pero tu deuda de largo plazo está ganando peso.”  
 - “Se detectó un posible riesgo de flujo de caja en los próximos años.”
+
+#### Semáforo Financiero Inteligente 
+Evalúa la salud de la empresa en tiempo real mediante un sistema de alertas visuales.
+
+¿Qué hace?: Asigna un color (VERDE/AMARILLO/ROJO) y una puntuación cuantificable a cuatro áreas críticas:
+      - Liquidez: Capacidad de pago a corto plazo.
+      - Rentabilidad: Eficiencia en la generación de utilidades.
+      - Endeudamiento: Nivel de deuda vs. patrimonio.
+
+#### Simulador de Crisis Financiera 
+Módulo de stress testing para medir la resiliencia del negocio.
+¿Qué hace?: Simula un escenario adverso y predice si la empresa SOBREVIVE o NO SOBREVIVE.
+Características:
+        - Proyecta el impacto en ventas y utilidades a 3 años.
+        - Genera alertas tempranas de vulnerabilidad.
+        - Proporciona un Plan de contingencia automático
+
+#### Recomendaciones Accionables por IA 
+La IA no solo analiza datos, sino que sugiere pasos ejecutables priorizados por urgencia (Crítico / Urgente / Sugerencia).
+
+
+### 3. Visualización 
+
+#### Nueva Pestaña: "Acciones Recomendadas" 
+Un panel de control completo que incluye:
+          - Resumen ejecutivo de prioridades.
+          - TOP 3 acciones más urgentes para el negocio.
+          - Sistema de seguimiento para marcar tareas completadas.
+#### Integración en Reporte PDF 
+Toda la inteligencia generada se consolida automáticamente en un reporte PDF descargable listo para la toma de decisiones gerenciales.
 
 ---
 
