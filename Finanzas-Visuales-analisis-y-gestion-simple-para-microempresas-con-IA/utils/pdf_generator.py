@@ -31,8 +31,7 @@ class PDFReportGenerator:
         self.report_data.setdefault('anomalias_financieras', {})
         self.report_data.setdefault('insights', {})
         self.report_data.setdefault('graficos', {})
-        
-        # Asegurar que existe la clave para simulador y semáforo
+        self.report_data.setdefault('recomendaciones_accionables', {})
         self.report_data.setdefault('simulador_crisis', {})
         self.report_data.setdefault('semaforo_financiero', {})
         
@@ -140,7 +139,12 @@ class PDFReportGenerator:
                 story.append(self._crear_seccion_anomalias(styles))
                 story.append(Spacer(1, 15))
             
-            # 11. INTERPRETACIÓN FINAL
+            # 11. RECOMENDACIONES ACCIONABLES
+            if 'recomendaciones_accionables' in self.report_data:
+                story.append(self._crear_seccion_acciones(styles))
+                story.append(Spacer(1, 15))
+            
+            # 12. INTERPRETACIÓN FINAL
             story.append(self._crear_seccion_interpretacion(styles))
             
             # Construir PDF
@@ -1042,8 +1046,99 @@ class PDFReportGenerator:
         
         return KeepTogether([titulo, Spacer(1, 6), table])
     
+    # Crear método para la sección:
+    def _crear_seccion_acciones(self, styles):
+        """Crea la sección de acciones recomendadas"""
+        acciones_data = self.report_data.get('recomendaciones_accionables', {})
+                
+        if not acciones_data or 'error' in acciones_data:
+            return Paragraph("<b>Acciones Recomendadas:</b> No disponibles", styles['Normal'])
+                
+        # Título
+        titulo_style = ParagraphStyle(
+        'TituloAcciones',
+        parent=styles['Heading2'],
+        fontSize=14,
+        spaceAfter=12,
+        textColor=colors.HexColor('#E91E63')
+        )
+        titulo = Paragraph("🎯 ACCIONES RECOMENDADAS POR IA", titulo_style)
+                
+        # Resumen
+        resumen_text = acciones_data.get('resumen', 'Sin resumen disponible')
+        resumen_style = ParagraphStyle(
+            'ResumenAcciones',
+            parent=styles['Normal'],
+            fontSize=11,
+            textColor=colors.HexColor('#2C3E50'),
+            backColor=colors.HexColor('#FCE4EC'),
+            borderPadding=10,
+            spaceAfter=12
+        )
+        resumen = Paragraph(f"<b>Resumen Ejecutivo:</b> {resumen_text}", resumen_style)
+                
+        # Top 3 acciones
+        top_acciones = acciones_data.get('acciones_principales', [])
+        data_top = [['PRIORIDAD', 'ACCIÓN', 'PLAZO']]
+                
+        for i, accion in enumerate(top_acciones[:3]):
+            data_top.append([
+                f"#{i+1}",
+                accion.get('titulo', 'Sin título'),
+                accion.get('plazo', 'N/A')
+            ])
+                
+        table_top = Table(data_top, colWidths=[0.8*inch, 3.5*inch, 1.2*inch])
+        table_top.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#E91E63')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#FCE4EC')),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#F48FB1'))
+        ]))
+                
+        # Lista completa
+        recomendaciones = acciones_data.get('recomendaciones', [])
+        elementos = [titulo, Spacer(1, 6), resumen, Spacer(1, 12)]
+                
+        if top_acciones:
+            elementos.append(Paragraph("<b>TOP 3 Acciones Prioritarias:</b>", styles['Normal']))
+            elementos.append(Spacer(1, 6))
+            elementos.append(table_top)
+            elementos.append(Spacer(1, 12))
+                
+        if recomendaciones:
+            elementos.append(Paragraph("<b>Lista Completa de Acciones:</b>", styles['Normal']))
+            elementos.append(Spacer(1, 8))
+                    
+            for i, rec in enumerate(recomendaciones[:10]):  # Máximo 10 en PDF
+                rec_text = f"""
+                <b>{i+1}. {rec.get('titulo', 'Acción')} [Prioridad: {rec.get('prioridad', 0)}/100]</b><br/>
+                <i>{rec.get('descripcion', 'Sin descripción')}</i><br/>
+                <b>✅ ACCIÓN:</b> {rec.get('accion', 'Sin acción especificada')}<br/>
+                <b>⏰ PLAZO:</b> {rec.get('plazo', 'No especificado')}<br/>
+                """
+                        
+                if rec.get('como'):
+                    rec_text += f"<b>🛠️ CÓMO:</b> {rec['como']}<br/>"
+                        
+                    rec_style = ParagraphStyle(
+                    f'RecStyle{i}',
+                    parent=styles['Normal'],
+                    fontSize=9,
+                    textColor=colors.HexColor('#2C3E50'),
+                    backColor=colors.HexColor('#F5F5F5') if i % 2 == 0 else colors.white,
+                    borderPadding=8,
+                    spaceAfter=8
+                )
+                        
+                elementos.append(Paragraph(rec_text, rec_style))
+                
+        return KeepTogether(elementos)       
     # Modificar la sección de interpretación para incluir semáforo
     def _crear_seccion_interpretacion(self, styles):
+
         """Crea la sección de interpretación final con semáforo"""
         resumen = self.report_data['resumen']
         semaforo = self.report_data.get('semaforo_financiero', {})

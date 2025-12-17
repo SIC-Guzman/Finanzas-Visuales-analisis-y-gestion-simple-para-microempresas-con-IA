@@ -84,6 +84,14 @@
                     <i class="fas fa-lightbulb me-1"></i>Insights Automáticos
                 </button>
             </li>
+            
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#acciones">
+                    <i class="fas fa-bullseye me-1"></i>Acciones Recomendadas
+                </button>
+            </li>
+
+            
         </ul>
 
         <!-- Contenido de pestañas -->
@@ -121,15 +129,15 @@
                 {% include "partials/_insights_tab.html" %}
             </div>
 
+            <div class="tab-pane fade" id="acciones">
+                {% include "partials/_acciones_tab.html" %}
+            </div>
         </div>
     </div>
 </div>
 
 
-<!-- --- DATOS PARA JAVASCRIPT (compatible con VSCode y Flask) --- -->
-<!-- eslint-disable -->
-<!-- jshint ignore:start -->
-
+<!-- --- Datos para gráficos y PDF --- -->
 <script>
 window.financialData = {
     resumen: {{ resultados.get("resumen", {}) | tojson | safe }},
@@ -137,15 +145,13 @@ window.financialData = {
     resultados_ia: {{ resultados.get("resultados_ia", {}) | tojson | safe }},
     anomalias_financieras: {{ resultados.get("anomalias_financieras", {}) | tojson | safe }},
     insights: {{ resultados.get("insights", {}) | tojson | safe }},
+    semaforo_financiero: {{ resultados.get("semaforo_financiero", {}) | tojson | safe }}, <!-- Añade esta línea -->
     empresa: {{ empresa | default({}) | tojson | safe }},
     filename: "{{ filename or '' }}"
 };
 
 console.log("📊 DATOS CARGADOS - Estructura completa:");
-console.log("- resumen:", window.financialData.resumen);
-console.log("- resultados_ia:", window.financialData.resultados_ia);
-console.log("- anomalias_financieras:", window.financialData.anomalias_financieras);
-console.log("- insights:", window.financialData.insights);
+console.log("- semaforo_financiero:", window.financialData.semaforo_financiero); <!-- Añade esta línea -->
 </script>
 
 
@@ -171,7 +177,7 @@ async function downloadPDF() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
                 filename: "{{ filename }}",
-                resultados: window.financialData  // ← ¡ESTA LÍNEA ES CLAVE!
+                resultados: window.financialData  
             })
         });
 

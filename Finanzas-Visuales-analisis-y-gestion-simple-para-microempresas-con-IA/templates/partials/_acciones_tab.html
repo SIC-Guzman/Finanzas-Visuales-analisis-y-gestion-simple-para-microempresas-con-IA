@@ -1,0 +1,229 @@
+<!-- Acciones Recomendadas por IA -->
+<div class="row">
+    <div class="col-12">
+        <h3 class="text-primary mb-4">
+            <i class="fas fa-bullseye me-2"></i>Acciones Recomendadas por IA
+        </h3>
+        
+        {% set acciones_data = resultados.get('recomendaciones_accionables', {}) %}
+        
+        {% if acciones_data and not acciones_data.get('error') %}
+            <!-- Resumen Ejecutivo -->
+            <div class="card shadow-sm mb-4 border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-flag me-2"></i>Resumen Ejecutivo
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 text-center mb-3">
+                            <div class="display-6 fw-bold 
+                                {% if acciones_data.criticas > 0 %}text-danger
+                                {% elif acciones_data.urgentes > 0 %}text-warning
+                                {% else %}text-success{% endif %}">
+                                {{ acciones_data.total_recomendaciones }}
+                            </div>
+                            <p class="text-muted mb-0">Acciones Recomendadas</p>
+                        </div>
+                        
+                        <div class="col-md-8">
+                            <div class="progress mb-2" style="height: 25px;">
+                                <div class="progress-bar bg-danger" 
+                                     style="width: {{ (acciones_data.criticas / acciones_data.total_recomendaciones * 100) if acciones_data.total_recomendaciones > 0 else 0 }}%">
+                                    Críticas: {{ acciones_data.criticas }}
+                                </div>
+                                <div class="progress-bar bg-warning" 
+                                     style="width: {{ (acciones_data.urgentes / acciones_data.total_recomendaciones * 100) if acciones_data.total_recomendaciones > 0 else 0 }}%">
+                                    Urgentes: {{ acciones_data.urgentes }}
+                                </div>
+                                <div class="progress-bar bg-success" 
+                                     style="width: {{ (acciones_data.sugerencias / acciones_data.total_recomendaciones * 100) if acciones_data.total_recomendaciones > 0 else 0 }}%">
+                                    Sugerencias: {{ acciones_data.sugerencias }}
+                                </div>
+                            </div>
+                            
+                            <p class="lead mb-0">{{ acciones_data.resumen }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- TOP 3 ACCIONES PRIORITARIAS -->
+            {% if acciones_data.get('acciones_principales') %}
+            <div class="card shadow-sm mb-4 border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>TOP 3 - Acciones más Urgentes
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for accion in acciones_data.acciones_principales %}
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100 border-start border-4 
+                                {% if loop.index == 1 %}border-danger
+                                {% elif loop.index == 2 %}border-warning
+                                {% else %}border-primary{% endif %}">
+                                <div class="card-header bg-light">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="badge 
+                                            {% if loop.index == 1 %}bg-danger
+                                            {% elif loop.index == 2 %}bg-warning
+                                            {% else %}bg-primary{% endif %} fs-6">
+                                            PRIORIDAD {{ loop.index }}
+                                        </span>
+                                        <small class="text-muted">{{ accion.plazo }}</small>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <h6 class="card-title">{{ accion.titulo }}</h6>
+                                    <p class="card-text">{{ accion.accion_principal }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- LISTA COMPLETA DE RECOMENDACIONES -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-tasks me-2"></i>Lista Completa de Acciones Recomendadas
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for rec in acciones_data.get('recomendaciones', []) %}
+                        <div class="list-group-item 
+                            {% if rec.prioridad >= 80 %}list-group-item-danger
+                            {% elif rec.prioridad >= 60 %}list-group-item-warning
+                            {% else %}list-group-item-success{% endif %}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <span class="badge 
+                                            {% if rec.prioridad >= 80 %}bg-danger
+                                            {% elif rec.prioridad >= 60 %}bg-warning
+                                            {% else %}bg-success{% endif %} me-2">
+                                            {{ rec.prioridad }}/100
+                                        </span>
+                                        <h6 class="mb-0">{{ rec.titulo }}</h6>
+                                    </div>
+                                    
+                                    <p class="mb-1"><strong>Descripción:</strong> {{ rec.descripcion }}</p>
+                                    <p class="mb-1"><strong>✅ ACCIÓN REQUERIDA:</strong> {{ rec.accion }}</p>
+                                    
+                                    {% if rec.get('como') %}
+                                    <div class="mt-2 p-2 bg-light rounded">
+                                        <small class="text-muted d-block mb-1"><strong>¿CÓMO HACERLO?:</strong></small>
+                                        <p class="mb-0 small">{{ rec.como }}</p>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <div class="mt-2">
+                                        <span class="badge bg-secondary me-2">
+                                            <i class="fas fa-calendar me-1"></i>{{ rec.plazo }}
+                                        </span>
+                                        {% if rec.get('impacto') %}
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-bullseye me-1"></i>{{ rec.impacto }}
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <button class="btn btn-sm btn-outline-primary ms-3" 
+                                        onclick="marcarComoCompletada({{ loop.index }})">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Botón de Plan de Acción >
+            <div class="text-center mt-4">
+                <button class="btn btn-success btn-lg" onclick="generarPlanAccion()">
+                    <i class="fas fa-download me-2"></i>Descargar Plan de Acción Completo
+                </button>
+            </div>
+            -->
+            
+        {% else %}
+            <!-- Mensaje si no hay recomendaciones -->
+            <div class="alert alert-info">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-info-circle fa-2x me-3"></i>
+                    <div>
+                        <h5 class="alert-heading">Sin recomendaciones específicas</h5>
+                        <p class="mb-0">La empresa muestra un desempeño financiero dentro de los parámetros saludables. Continúa con las prácticas actuales.</p>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- JavaScript para interactividad -->
+<script>
+function marcarComoCompletada(index) {
+    const item = document.querySelector(`.list-group-item:nth-child(${index + 1})`);
+    item.classList.remove('list-group-item-danger', 'list-group-item-warning');
+    item.classList.add('list-group-item-success');
+    
+    // Mostrar notificación
+    showAlert('✅ Acción marcada como completada', 'success');
+    
+    // Actualizar contador
+    const completadas = document.querySelectorAll('.list-group-item-success').length;
+    const total = document.querySelectorAll('.list-group-item').length;
+    const progreso = Math.round((completadas / total) * 100);
+    
+    // Actualizar progreso (podrías guardar en localStorage)
+    console.log(`Progreso: ${progreso}% (${completadas}/${total} acciones)`);
+}
+
+function generarPlanAccion() {
+    const btn = event.target;
+    const original = btn.innerHTML;
+    
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Generando...';
+    
+    // Aquí podrías implementar generación de PDF con el plan
+    setTimeout(() => {
+        showAlert('📄 Plan de acción generado. La descarga comenzará pronto.', 'info');
+        btn.disabled = false;
+        btn.innerHTML = original;
+        
+        // Simular descarga
+        const element = document.createElement('a');
+        element.setAttribute('href', 'data:text/plain;charset=utf-8,' + 
+            encodeURIComponent(generarTextoPlan()));
+        element.setAttribute('download', 'plan_accion_financiero.txt');
+        element.style.display = 'none';
+        document.body.appendChild(element);
+        element.click();
+        document.body.removeChild(element);
+    }, 1500);
+}
+
+function generarTextoPlan() {
+    let texto = `PLAN DE ACCIÓN FINANCIERO\n`;
+    texto += `Fecha: ${new Date().toLocaleDateString()}\n`;
+    texto += `Empresa: ${window.financialData.empresa.nombre || 'No especificada'}\n`;
+    texto += `========================================\n\n`;
+    
+    // Aquí podrías acceder a los datos reales
+    texto += `ACCIONES RECOMENDADAS:\n`;
+    texto += `====================\n\n`;
+    
+    return texto;
+}
+</script>

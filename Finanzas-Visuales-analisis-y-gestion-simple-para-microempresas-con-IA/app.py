@@ -13,6 +13,8 @@ from utils.pdf_generator import PDFReportGenerator
 from utils.generador_insights import GeneradorInsights
 from types import SimpleNamespace
 from utils.semaforo_financiero import SemaforoFinanciero
+from utils.recomendaciones_inteligentes import GeneradorRecomendaciones
+
 # ==================== 2. CONFIGURACIÓN DE FLASK ====================
 app = Flask(__name__)
 app.secret_key = 'analizador_financiero_2024'
@@ -342,6 +344,45 @@ def process_analysis(filename):
                 "recomendaciones": []
             }
             print(f"🔧 Se estableció estructura mínima de insights")
+        # --- Generar semáforo financiero ---
+        try:
+            # Generar semáforo financiero
+            razones = resultados.get('resultados', {}).get('razones', {})
+            resultados_ia = resultados.get('resultados_ia', {})
+            anomalias = resultados.get('anomalias_financieras', {})
+            
+            semaforo_obj = SemaforoFinanciero(
+                razones=razones,
+                resultados_ia=resultados_ia,
+                anomalias=anomalias
+            )
+            
+            resultados['semaforo_financiero'] = semaforo_obj.generar_semaforo()
+            print("✅ Semáforo financiero generado")
+        except Exception as e:
+            print(f"⚠️ Error generando semáforo: {e}")
+            resultados['semaforo_financiero'] = {}
+        # Añadir import
+        
+
+        # En la función process_analysis, después de generar insights:
+        try:
+            # Generar recomendaciones accionables
+            print("🔄 Generando recomendaciones accionables...")
+            
+            generador_rec = GeneradorRecomendaciones(resultados)
+            recomendaciones_completas = generador_rec.resumen_recomendaciones()
+            
+            # Añadir a resultados
+            resultados['recomendaciones_accionables'] = recomendaciones_completas
+            
+            print(f"✅ Recomendaciones generadas: {len(recomendaciones_completas.get('recomendaciones', []))} acciones")
+            
+        except Exception as e:
+            print(f"⚠️ Error generando recomendaciones: {e}")
+            resultados['recomendaciones_accionables'] = {
+                'error': 'No se pudieron generar recomendaciones personalizadas'
+    }
 
 
          # Asegurar que todas las claves necesarias existan

@@ -1,19 +1,207 @@
-<!-- Insights Automáticos Generados por IA -->
+<!-- Insights Automáticos Generados por IA y Semáforo Financiero -->
 <div class="row">
     <div class="col-12">
         <h3 class="text-primary mb-4">
-            <i class="fas fa-brain me-2"></i>Insights Automáticos Generados por IA
+            <i class="fas fa-brain me-2"></i>Insights Automáticos y Semáforo Financiero
         </h3>
         
         {% set insights_data = resultados.get('insights', {}) %}
+        {% set semaforo_data = resultados.get('semaforo_financiero', {}) %}
         
+        <!-- Sección del Semáforo Financiero -->
+        {% if semaforo_data %}
+        <div class="card shadow-sm mb-4">
+            <div class="card-header" style="background: linear-gradient(135deg, #2C3E50 0%, #34495E 100%); color: white;">
+                <h5 class="mb-0">
+                    <i class="fas fa-traffic-light me-2"></i>Semáforo Financiero - Estado: 
+                    <span class="badge 
+                        {% if semaforo_data.get('estado_general') == 'VERDE' %}bg-success
+                        {% elif semaforo_data.get('estado_general') == 'AMARILLO' %}bg-warning
+                        {% elif semaforo_data.get('estado_general') == 'ROJO' %}bg-danger
+                        {% else %}bg-secondary{% endif %}">
+                        {{ semaforo_data.get('estado_general', 'NO DISPONIBLE') }}
+                    </span>
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Mensaje General -->
+                <div class="alert 
+                    {% if semaforo_data.get('estado_general') == 'VERDE' %}alert-success
+                    {% elif semaforo_data.get('estado_general') == 'AMARILLO' %}alert-warning
+                    {% elif semaforo_data.get('estado_general') == 'ROJO' %}alert-danger
+                    {% else %}alert-info{% endif %} mb-4">
+                    <div class="d-flex align-items-center">
+                        <i class="fas 
+                            {% if semaforo_data.get('estado_general') == 'VERDE' %}fa-check-circle
+                            {% elif semaforo_data.get('estado_general') == 'AMARILLO' %}fa-exclamation-triangle
+                            {% elif semaforo_data.get('estado_general') == 'ROJO' %}fa-exclamation-circle
+                            {% else %}fa-info-circle{% endif %} 
+                            fa-2x me-3"></i>
+                        <div>
+                            <h5 class="alert-heading">Evaluación Financiera</h5>
+                            <p class="mb-0">{{ semaforo_data.get('mensaje', 'Sin evaluación disponible') }}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Tarjetas de Áreas Evaluadas -->
+                {% if semaforo_data.get('areas') %}
+                <div class="row mb-4">
+                    <div class="col-md-3 mb-3">
+                        <div class="card h-100 text-center border-0 shadow-sm">
+                            <div class="card-body p-3">
+                                <div class="mb-3">
+                                    <i class="fas fa-money-bill-wave fa-3x 
+                                        {% if semaforo_data.areas.liquidez.estado == 'VERDE' %}text-success
+                                        {% elif semaforo_data.areas.liquidez.estado == 'AMARILLO' %}text-warning
+                                        {% else %}text-danger{% endif %}"></i>
+                                </div>
+                                <h6 class="card-title">Liquidez</h6>
+                                <span class="badge 
+                                    {% if semaforo_data.areas.liquidez.estado == 'VERDE' %}bg-success
+                                    {% elif semaforo_data.areas.liquidez.estado == 'AMARILLO' %}bg-warning
+                                    {% else %}bg-danger{% endif %} fs-6 mb-2">
+                                    {{ semaforo_data.areas.liquidez.estado }}
+                                </span>
+                                <p class="card-text small mb-1">Score: {{ semaforo_data.areas.liquidez.score }}/100</p>
+                                <p class="card-text small text-muted">
+                                    {% if semaforo_data.areas.liquidez.estado == 'VERDE' %}
+                                    Óptima capacidad de pago
+                                    {% elif semaforo_data.areas.liquidez.estado == 'AMARILLO' %}
+                                    Monitorear flujo de caja
+                                    {% else %}
+                                    Revisar obligaciones corto plazo
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3 mb-3">
+                        <div class="card h-100 text-center border-0 shadow-sm">
+                            <div class="card-body p-3">
+                                <div class="mb-3">
+                                    <i class="fas fa-chart-line fa-3x 
+                                        {% if semaforo_data.areas.rentabilidad.estado == 'VERDE' %}text-success
+                                        {% elif semaforo_data.areas.rentabilidad.estado == 'AMARILLO' %}text-warning
+                                        {% else %}text-danger{% endif %}"></i>
+                                </div>
+                                <h6 class="card-title">Rentabilidad</h6>
+                                <span class="badge 
+                                    {% if semaforo_data.areas.rentabilidad.estado == 'VERDE' %}bg-success
+                                    {% elif semaforo_data.areas.rentabilidad.estado == 'AMARILLO' %}bg-warning
+                                    {% else %}bg-danger{% endif %} fs-6 mb-2">
+                                    {{ semaforo_data.areas.rentabilidad.estado }}
+                                </span>
+                                <p class="card-text small mb-1">Score: {{ semaforo_data.areas.rentabilidad.score }}/100</p>
+                                <p class="card-text small text-muted">
+                                    {% if semaforo_data.areas.rentabilidad.estado == 'VERDE' %}
+                                    Uso eficiente de recursos
+                                    {% elif semaforo_data.areas.rentabilidad.estado == 'AMARILLO' %}
+                                    Oportunidades de mejora
+                                    {% else %}
+                                    Revisar márgenes y costos
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3 mb-3">
+                        <div class="card h-100 text-center border-0 shadow-sm">
+                            <div class="card-body p-3">
+                                <div class="mb-3">
+                                    <i class="fas fa-balance-scale fa-3x 
+                                        {% if semaforo_data.areas.endeudamiento.estado == 'VERDE' %}text-success
+                                        {% elif semaforo_data.areas.endeudamiento.estado == 'AMARILLO' %}text-warning
+                                        {% else %}text-danger{% endif %}"></i>
+                                </div>
+                                <h6 class="card-title">Endeudamiento</h6>
+                                <span class="badge 
+                                    {% if semaforo_data.areas.endeudamiento.estado == 'VERDE' %}bg-success
+                                    {% elif semaforo_data.areas.endeudamiento.estado == 'AMARILLO' %}bg-warning
+                                    {% else %}bg-danger{% endif %} fs-6 mb-2">
+                                    {{ semaforo_data.areas.endeudamiento.estado }}
+                                </span>
+                                <p class="card-text small mb-1">Score: {{ semaforo_data.areas.endeudamiento.score }}/100</p>
+                                <p class="card-text small text-muted">
+                                    {% if semaforo_data.areas.endeudamiento.estado == 'VERDE' %}
+                                    Estructura financiera sólida
+                                    {% elif semaforo_data.areas.endeudamiento.estado == 'AMARILLO' %}
+                                    Mantener bajo control
+                                    {% else %}
+                                    Riesgo financiero elevado
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3 mb-3">
+                        <div class="card h-100 text-center border-0 shadow-sm">
+                            <div class="card-body p-3">
+                                <div class="mb-3">
+                                    <i class="fas fa-robot fa-3x 
+                                        {% if semaforo_data.areas.riesgo_ia.estado == 'VERDE' %}text-success
+                                        {% elif semaforo_data.areas.riesgo_ia.estado == 'AMARILLO' %}text-warning
+                                        {% else %}text-danger{% endif %}"></i>
+                                </div>
+                                <h6 class="card-title">Riesgo Anomalías</h6>
+                                <span class="badge 
+                                    {% if semaforo_data.areas.riesgo_ia.estado == 'VERDE' %}bg-success
+                                    {% elif semaforo_data.areas.riesgo_ia.estado == 'AMARILLO' %}bg-warning
+                                    {% else %}bg-danger{% endif %} fs-6 mb-2">
+                                    {{ semaforo_data.areas.riesgo_ia.estado }}
+                                </span>
+                                <p class="card-text small mb-1">Score: {{ semaforo_data.areas.riesgo_ia.score }}/100</p>
+                                <p class="card-text small text-muted">
+                                    {% if semaforo_data.areas.riesgo_ia.estado == 'VERDE' %}
+                                    Operación estable y normal
+                                    {% elif semaforo_data.areas.riesgo_ia.estado == 'AMARILLO' %}
+                                    Monitorear tendencias
+                                    {% else %}
+                                    Revisión inmediata requerida
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Leyenda -->
+                <div class="alert alert-light border">
+                    <div class="row">
+                        <div class="col-md-3 text-center">
+                            <span class="badge bg-success me-2">VERDE</span>
+                            <small>Óptimo</small>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <span class="badge bg-warning me-2">AMARILLO</span>
+                            <small>Precaución</small>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <span class="badge bg-danger me-2">ROJO</span>
+                            <small>Necesita atención</small>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <span class="badge bg-secondary me-2">N/A</span>
+                            <small>No disponible</small>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Insights Generados por IA -->
         {% if insights_data %}
             <!-- Resumen General -->
             {% if insights_data.get('resumen') %}
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-info text-white">
                     <h5 class="mb-0">
-                        <i class="fas fa-file-alt me-2"></i>Resumen de Insights
+                        <i class="fas fa-file-alt me-2"></i>Resumen de Insights IA
                     </h5>
                 </div>
                 <div class="card-body">
@@ -27,7 +215,7 @@
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-success text-white">
                     <h5 class="mb-0">
-                        <i class="fas fa-lightbulb me-2"></i>Insights Detectados
+                        <i class="fas fa-lightbulb me-2"></i>Insights Detectados por IA
                     </h5>
                 </div>
                 <div class="card-body">
@@ -66,7 +254,7 @@
             <div class="card shadow-sm">
                 <div class="card-header bg-warning">
                     <h5 class="mb-0">
-                        <i class="fas fa-clipboard-check me-2"></i>Recomendaciones
+                        <i class="fas fa-clipboard-check me-2"></i>Recomendaciones IA
                     </h5>
                 </div>
                 <div class="card-body">
@@ -86,15 +274,17 @@
             
         {% else %}
             <!-- Mensaje si no hay insights -->
+            {% if not semaforo_data %}
             <div class="alert alert-warning">
                 <div class="d-flex align-items-center">
                     <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
                     <div>
-                        <h5 class="alert-heading">No se generaron insights automáticos</h5>
-                        <p class="mb-0">Los insights basados en IA no están disponibles para este análisis.</p>
+                        <h5 class="alert-heading">No hay datos disponibles</h5>
+                        <p class="mb-0">Los insights y semáforo financiero no están disponibles para este análisis.</p>
                     </div>
                 </div>
             </div>
+            {% endif %}
         {% endif %}
     </div>
 </div>
